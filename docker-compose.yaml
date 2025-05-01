@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  nanomq:
+    image: emqx/nanomq:latest
+    container_name: nanomq-broker
+    ports:
+      - "1883:1883"  # MQTT
+      - "8081:8081"  # API REST (se habilitada)
+      - "8883:8883"  # MQTTs (SSL/TLS)
+      - "18083:18083" # Dashboard
+    environment:
+      - NANOMQ_LOG_LEVEL=debug 
+      - NANOMQ_CONF_PATH=/etc/nanomq.conf
+      - NANOMQ_URL=mqtt-tcp://0.0.0.0:1883
+    volumes:
+      - ./nanomq/nanomq.conf:/etc/nanomq.conf
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8081/health"]
+      interval: 180s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  telegraf-data:
+    image: telegraf:latest
+    container_name: telegraf-data
+    depends_on:
+      - influxdb
+    environment:
+      - HOSTNAME=telegraf
+    volumes:
+      - ./influx/device-data.conf:/etc/telegraf/telegraf.conf:ro
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:2.7.11-alpine
+    restart: always
+    ports:
+      - 8086:8086
+    volumes:
+      - influxdb-data-volume:/var/lib/influxdb2
+      - influxdb-config-volume:/etc/influxdb2
+    healthcheck:
+      test: "influx ping"
+      interval: 180s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  influxdb-data-volume:
+  influxdb-config-volume:
