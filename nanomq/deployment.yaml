@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanomq
+  labels:
+    app: nanomq
+  namespace: ed-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nanomq
+  template:
+    metadata:
+      labels:
+        app: nanomq
+    spec:
+      containers:
+      - name: nanomq
+        image: emqx/nanomq:latest
+        ports:
+        - containerPort: 1883   # Porta MQTT
+        - containerPort: 8883   # Porta MQTT com TLS (opcional)
+        - containerPort: 8081   # Porta HTTP server/API (opcional)
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nanomq.conf
+          subPath: nanomq.conf
+      volumes:
+      - name: config
+        configMap:
+          name: nanomq-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nanomq-config
+  namespace: ed-system
+data:
+  nanomq.conf: |
+    log.level = "debug"
+    mqtt.url = "tcp://0.0.0.0:1883"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nanomq
+  labels:
+    app: nanomq
+  namespace: ed-system
+spec:
+  selector:
+    app: nanomq
+  ports:
+  - name: mqtt
+    port: 1883
+    targetPort: 1883
+  - name: mqtts
+    port: 8883
+    targetPort: 8883
+  - name: http
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP
