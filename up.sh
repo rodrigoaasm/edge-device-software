@@ -14,5 +14,6 @@ kubectl apply -f roles/role_manager_deployment.yaml
 ## create operator deployment
 kubectl apply -f ed-operator/deployment.yaml
 
-#kubectl apply -f nanomq/deployment.yaml
+## create services default
+kubectl apply -f deployments-default/nanomq/deployment.yaml
 
