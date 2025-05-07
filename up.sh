@@ -12,7 +12,7 @@ kubectl apply -f roles/role_manager_binding.yaml
 kubectl apply -f roles/role_manager_deployment.yaml
 
 ## create operator deployment
-kubectl apply -f eds-operator/deployment.yaml
+kubectl apply -f ed-operator/deployment.yaml
 
 #kubectl apply -f nanomq/deployment.yaml
 

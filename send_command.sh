@@ -1,13 +1,20 @@
 #!/bin/bash
 mosquitto_pub -d \
-  -h 10.42.0.101 -p 1883 \
+  -h 10.42.0.126 -p 1883 \
   -t deployments/start \
-  -m '{
-    "command": "undeploy",
-    "args": { 
-      "name":"influxdb"
-    }
-  }' 
+  -m  '{
+     "command": "update",
+     "args": { 
+       "name":"operator",
+       "image":"rodrigoasmaia/ed-operator:0.4.8"
+     }
+   }' 
+
+
+
+
+
+
 
 # '{
 #     "command": "deploy",
@@ -24,3 +31,10 @@ mosquitto_pub -d \
 #       "image":"rodrigoasmaia/telegraf:0.1.0"
 #     }
 #   }' 
+
+#'{
+#    "command": "undeploy",
+#    "args": { 
+#      "name":"influxdb"
+#    }
+#  }'

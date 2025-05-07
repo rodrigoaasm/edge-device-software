@@ -18,7 +18,7 @@ spec:
       serviceAccountName: controller-manager
       containers:
       - name: operator
-        image: rodrigoasmaia/ed-operator:0.3.4
+        image: rodrigoasmaia/ed-operator:0.4.7
         resources:
           limits:
             memory: "256Mi"
