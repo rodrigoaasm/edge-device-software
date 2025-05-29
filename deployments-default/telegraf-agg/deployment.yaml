@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegraf-agg
+  labels:
+    app: telegraf-agg
+  namespace: ed-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegraf-agg
+  template:
+    metadata:
+      labels:
+        app: telegraf-agg
+    spec:
+      serviceAccountName: controller-manager
+      containers:
+      - name: telegraf-agg
+        image: rodrigoasmaia/telegraf-agg:0.1.0
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
