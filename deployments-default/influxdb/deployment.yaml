@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - name: influxdb
+        image: influxdb:2.7.11-alpine
+        ports:
+          - containerPort: 8086
+        volumeMounts:
+          - name: influxdb-data
+            mountPath: /var/lib/influxdb2
+          - name: influxdb-config
+            mountPath: /etc/influxdb2
+        livenessProbe:
+          exec:
+            command:
+              - influx
+              - ping
+          initialDelaySeconds: 10
+          periodSeconds: 180
+          timeoutSeconds: 10
+          failureThreshold: 3
+        resources:
+          limits:
+            memory: "1024Mi"
+            cpu: "400m"
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+        - name: influxdb-data
+          persistentVolumeClaim:
+            claimName: influxdb-data-pvc
+        - name: influxdb-config
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+spec:
+  selector:
+    app: influxdb
+  ports:
+    - protocol: TCP
+      port: 8086
+      targetPort: 8086
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influxdb-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+

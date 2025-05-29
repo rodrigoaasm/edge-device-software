@@ -24,10 +24,10 @@ spec:
         - containerPort: 8081   # Porta HTTP server/API (opcional)
         resources:
           limits:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "200m"
           requests:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "100m"
         volumeMounts:
         - name: config

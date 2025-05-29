@@ -68,7 +68,6 @@ func (d *UpdateDeployCommand) Execute() error {
 			Namespace: "ed-system",
 		},
 		Spec: appsv1.DeploymentSpec{
-
 			Replicas: &repl,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": d.Name},

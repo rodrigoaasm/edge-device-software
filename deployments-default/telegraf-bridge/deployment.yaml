@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegraf-bridge
+  labels:
+    app: telegraf-bridge
+  namespace: ed-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegraf-bridge
+  template:
+    metadata:
+      labels:
+        app: telegraf-bridge
+    spec:
+      serviceAccountName: controller-manager
+      containers:
+      - name: telegraf-bridge
+        image: rodrigoasmaia/telegraf-bridge:0.1.0
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
