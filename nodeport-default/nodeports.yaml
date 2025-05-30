@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nanomq-nodeport
+  namespace: ed-system
+spec:
+  selector:
+    app: nanomq
+  type: NodePort
+  ports:
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      nodePort: 31883
+    - name: mqtts
+      port: 8883
+      targetPort: 8883
+      nodePort: 30883
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-nodeport
+  namespace: ed-system
+spec:
+  selector:
+    app: influxdb
+  type: NodePort
+  ports:
+    - name: http
+      port: 8086
+      targetPort: 8086
+      nodePort: 30086

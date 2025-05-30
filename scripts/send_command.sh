@@ -1,18 +1,18 @@
 #!/bin/bash
 mosquitto_pub -d \
-  -h 10.42.0.126 -p 1883 \
-  -t deployments/start \
-  -m  '{
-     "command": "update",
-     "args": { 
-       "name":"operator",
-       "image":"rodrigoasmaia/ed-operator:0.4.8"
-     }
-   }' 
+  -h localhost -p 31883 \
+  -t device/data \
+  -m 'dd17dd temperatura=71 1748613118000000000'
 
 
 
-
+# '{
+#      "command": "update",
+#      "args": { 
+#        "name":"operator",
+#        "image":"rodrigoasmaia/ed-operator:0.4.8"
+#      }
+#    }' 
 
 
 

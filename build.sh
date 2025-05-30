@@ -35,6 +35,6 @@ mkdir -p .images
 docker save rodrigoasmaia/${SERVICE}:${VERSION} \
   -o .images/rodrigoasmaia-${SERVICE}:${VERSION}.tar
 
-ctr -n k3s images import .images/rodrigoasmaia-${SERVICE}:${VERSION}.tar
+k3s ctr images import .images/rodrigoasmaia-${SERVICE}:${VERSION}.tar
 echo "✅ Import done!"
 
