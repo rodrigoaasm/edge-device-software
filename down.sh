@@ -27,6 +27,9 @@ kubectl delete deployment influxdb -n ed-system
 echo "Removing telegraf-bridge deployment"
 kubectl delete deployment telegraf-bridge -n ed-system
 
+echo "Removing telegraf-agg deployment"
+kubectl delete deployment telegraf-agg -n ed-system
+
 echo "Closing external ports"
 kubectl delete service influxdb-nodeport -n ed-system
 kubectl delete service nanomq-nodeport -n ed-system

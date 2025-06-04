@@ -3,6 +3,7 @@ ED_OPERATOR_VERSION="0.3.0"
 NANOMQ_VERSION=latest
 INFLUXDB_VERSION="0.3.0"
 TELEGRAF_BRIDGE_VERSION="0.3.0"
+TELEGRAF_AGG_VERSION="0.3.0". 
 
 echo "creating roles"
 kubectl apply -f roles/role_manager.yaml
@@ -41,8 +42,13 @@ pushd "../telegraf-bridge" > /dev/null
 kustomize edit set image rodrigoasmaia/telegraf-bridge=rodrigoasmaia/telegraf-bridge:$TELEGRAF_BRIDGE_VERSION
 kustomize build . | kubectl apply -f -
 
-# echo "Opening external ports..."
-# pushd "../.."
-# kubectl apply -f nodeport-default/nodeports.yaml
+echo "- telegraf-agg"
+pushd "../telegraf-agg" > /dev/null
+kustomize edit set image rodrigoasmaia/telegraf-agg=rodrigoasmaia/telegraf-agg:$TELEGRAF_AGG_VERSION
+kustomize build . | kubectl apply -f -
+
+echo "Opening external ports..."
+pushd "../.."
+kubectl apply -f nodeport-default/nodeports.yaml
 
 kubectl get services -n ed-system
