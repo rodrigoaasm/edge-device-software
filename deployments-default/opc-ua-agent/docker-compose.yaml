@@ -10,4 +10,13 @@ services:
       CONSUMER_TOPIC: "device/config"
       DEVICE_ID: "abc123"
       LOG_LEVEL: "debug"
-      BROKER_URL: "tcp://nanomq:1883"
+      BROKER_URL: "tcp://172.31.212.236:31883"
+
+  opc-node-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+
+networks:
+  default:
+    name: opc-dev

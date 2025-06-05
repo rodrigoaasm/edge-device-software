@@ -14,7 +14,7 @@ func Migrate(con *sql.DB) {
 	con.Exec(`CREATE TABLE IF NOT EXISTS device (	
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		device_id VARCHAR(6) UNIQUE,
-		device_ip VARCHAR(20) NOT NULL,
+		device_ip VARCHAR(20) UNIQUE,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`)

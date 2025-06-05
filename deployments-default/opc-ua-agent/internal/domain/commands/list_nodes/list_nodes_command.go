@@ -1,4 +1,4 @@
-package domain_commands
+package domain_command_list_nodes
 
 import (
 	"fmt"
@@ -8,15 +8,22 @@ import (
 )
 
 type ListNodesCommand struct {
+	CorrelationId string
+
 	log              logr.Logger
 	deviceRepository domain_interfaces.IDeviceRepository
 }
 
-func NewListNodesCommand(log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *ListNodesCommand {
+func New(correlationId string, log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *ListNodesCommand {
 	return &ListNodesCommand{
+		CorrelationId:    correlationId,
 		log:              log,
 		deviceRepository: deviceRepository,
 	}
+}
+
+func (c *ListNodesCommand) GetCorrelationId() string {
+	return c.CorrelationId
 }
 
 func (c *ListNodesCommand) Execute() (interface{}, error) {

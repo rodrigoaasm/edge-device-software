@@ -1,11 +1,13 @@
 package dto
 
-type CommandDTO struct {
-	DeviceId string `json:"deviceId"`
-	Command  string `json:"command"`
-	Ip       string `json:"ip"`
+type ArgsDto struct {
+	NodeId string `json:"nodeId"`
+	Ip     string `json:"ip"`
 }
 
-/*
-{"name":"telegraf","image":"influxdb:2.7.11-alpine","env":{}}
-*/
+type CommandDTO struct {
+	CorrelationId string  `json:"correlationId"`
+	DeviceId      string  `json:"deviceId"`
+	Command       string  `json:"command"`
+	Args          ArgsDto `json:"args"`
+}

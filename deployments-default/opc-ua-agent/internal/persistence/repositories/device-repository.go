@@ -55,3 +55,25 @@ func (r *DeviceRepository) List() ([]entities.Device, error) {
 
 	return devices, nil
 }
+
+func (r *DeviceRepository) Remove(deviceId string) (domain_interfaces.ITransactionManager, error) {
+	tx, err := r.con.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	stmt, err := tx.Prepare("DELETE FROM device WHERE device_id = ?")
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(deviceId)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return tx, nil
+}

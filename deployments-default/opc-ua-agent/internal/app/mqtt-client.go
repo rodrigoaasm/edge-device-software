@@ -51,41 +51,44 @@ func (c *MQTTClient) Connect() {
 	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, func(q mqtt.Client, m mqtt.Message) {
 		var messageDTO dto.CommandDTO
 		if err := json.Unmarshal(m.Payload(), &messageDTO); err != nil {
-			c.PublishResult(false, "Failed to Unmarshal message. "+err.Error(), nil)
-			c.log.Error(err, "Failed to Unmarshal message")
+			c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
 			return
 		}
 
 		if messageDTO.DeviceId == c.config.DeviceId {
-			c.log.Info("Command is for me..")
+			c.log.Info("Command (" + messageDTO.CorrelationId + ") is for me..")
+			if messageDTO.CorrelationId == "" {
+				c.log.Error(nil, "The command not have a correlation id. Ignore.")
+				return
+			}
+
 			command, err := c.commandFactory.Make(messageDTO)
 			if err == nil {
 				data, cerr := command.Execute()
 				if cerr != nil {
-					c.PublishResult(false, "Failed to execute command."+err.Error(), data)
-					c.log.Error(cerr, "Failed to execute command")
+					c.PublishResult(command, false, "Failed to execute command."+err.Error(), data)
 					return
 				}
 
-				c.log.Info("Command executed.")
-				c.PublishResult(true, "", data)
+				c.PublishResult(command, true, "", data)
+				return
+			} else {
+				c.PublishResult(command, false, "Command invalid. "+err.Error(), nil)
 				return
 			}
-
-			c.log.Error(err, "Failed to make command")
 		}
 	})
 }
 
-func (c *MQTTClient) PublishResult(Success bool, Message string, Data interface{}) error {
-	if Success {
-		c.log.Info("Command executed successfully")
-	} else {
-		c.log.Error(nil, "Command execution failed. Message: "+Message)
-	}
-
-	c.log.Info("Publishing result...")
-	payload, err := json.MarshalIndent(dto.ResultDto{Success: Success, Data: Data, Message: Message}, "", "  ")
+func (c *MQTTClient) PublishResult(cmd domain_commands.ICommand, Success bool, Message string, Data interface{}) error {
+	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", cmd.GetCorrelationId(), Success, Message))
+	payload, err := json.MarshalIndent(dto.ResultDto{
+		CorrelationId: cmd.GetCorrelationId(),
+		Success:       Success,
+		Data:          Data,
+		Message:       Message,
+	},
+		"", "  ")
 	if err != nil {
 		c.log.Error(err, "Failed to marshal result")
 		return nil

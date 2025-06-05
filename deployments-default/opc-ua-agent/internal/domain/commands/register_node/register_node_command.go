@@ -1,4 +1,4 @@
-package domain_commands
+package domain_commands_register_node
 
 import (
 	"github.com/go-logr/logr"
@@ -7,18 +7,24 @@ import (
 )
 
 type RegisterNodeCommand struct {
-	Device entities.Device
+	CorrelationId string
+	Device        entities.Device
 
 	log              logr.Logger
 	deviceRepository domain_interfaces.IDeviceRepository
 }
 
-func NewRegisterNodeCommand(device entities.Device, log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *RegisterNodeCommand {
+func New(CorrelationId string, device entities.Device, log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *RegisterNodeCommand {
 	return &RegisterNodeCommand{
+		CorrelationId:    CorrelationId,
 		Device:           device,
 		log:              log,
 		deviceRepository: deviceRepository,
 	}
+}
+
+func (c *RegisterNodeCommand) GetCorrelationId() string {
+	return c.CorrelationId
 }
 
 func (c *RegisterNodeCommand) Execute() (interface{}, error) {
