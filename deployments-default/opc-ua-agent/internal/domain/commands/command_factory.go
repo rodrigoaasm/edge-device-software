@@ -14,14 +14,20 @@ import (
 )
 
 type CommandFactory struct {
-	ctx              context.Context
-	deviceRepository domain_interfaces.IDeviceRepository
+	ctx                 context.Context
+	deviceRepository    domain_interfaces.IDeviceRepository
+	outputDriverFactory domain_interfaces.IOutputDriverFactory
 }
 
-func NewCommandFactory(ctx context.Context, deviceRepository domain_interfaces.IDeviceRepository) *CommandFactory {
+func NewCommandFactory(
+	ctx context.Context,
+	outputDriverFactory domain_interfaces.IOutputDriverFactory,
+	deviceRepository domain_interfaces.IDeviceRepository,
+) *CommandFactory {
 	return &CommandFactory{
-		ctx:              ctx,
-		deviceRepository: deviceRepository,
+		ctx:                 ctx,
+		deviceRepository:    deviceRepository,
+		outputDriverFactory: outputDriverFactory,
 	}
 }
 
@@ -29,11 +35,11 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 	log := logr.FromContextOrDiscard(c.ctx)
 
 	if command.Command == "register_opc" {
-		device, err := entities.NewDevice(command.Args.NodeId, command.Args.Ip)
+		device, err := entities.NewDevice(command.Args.NodeId, command.Args.Url)
 		if err != nil {
 			return nil, err
 		}
-		return domain_commands_register_node.New(command.CorrelationId, *device, log, c.deviceRepository), nil
+		return domain_commands_register_node.New(command.CorrelationId, *device, log, c.outputDriverFactory, c.deviceRepository), nil
 	}
 
 	if command.Command == "list_opc" {

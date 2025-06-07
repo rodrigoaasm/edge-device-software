@@ -2,7 +2,7 @@ package dto
 
 type ArgsDto struct {
 	NodeId string `json:"nodeId"`
-	Ip     string `json:"ip"`
+	Url    string `json:"url"`
 }
 
 type CommandDTO struct {

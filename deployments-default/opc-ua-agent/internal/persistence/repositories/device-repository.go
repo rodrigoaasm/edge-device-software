@@ -23,14 +23,14 @@ func (r *DeviceRepository) Create(device entities.Device) (domain_interfaces.ITr
 		return nil, err
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO device (device_id, device_ip) VALUES (?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO device (device_id, device_url) VALUES (?, ?)")
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(device.DeviceId, device.Ip)
+	_, err = stmt.Exec(device.DeviceId, device.Url)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -41,13 +41,13 @@ func (r *DeviceRepository) Create(device entities.Device) (domain_interfaces.ITr
 
 func (r *DeviceRepository) List() ([]entities.Device, error) {
 	var devices []entities.Device
-	rows, err := r.con.Query("SELECT device_id, device_ip, created_at, updated_at FROM device")
+	rows, err := r.con.Query("SELECT device_id, device_url, created_at, updated_at FROM device")
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var device entities.Device
-		if err := rows.Scan(&device.DeviceId, &device.Ip, &device.CreatedAt, &device.UpdatedAt); err != nil {
+		if err := rows.Scan(&device.DeviceId, &device.Url, &device.CreatedAt, &device.UpdatedAt); err != nil {
 			return nil, err
 		}
 		devices = append(devices, device)

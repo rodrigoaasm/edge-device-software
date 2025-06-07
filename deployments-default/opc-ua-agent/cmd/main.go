@@ -10,7 +10,8 @@ import (
 	"github.com/go-logr/logr"
 	stdr "github.com/go-logr/stdr"
 	"opc.ua.agent/config"
-	"opc.ua.agent/internal/app"
+	app_mqtt "opc.ua.agent/internal/app/mqtt"
+	app_opcua "opc.ua.agent/internal/app/opcua"
 	domain_commands "opc.ua.agent/internal/domain/commands"
 	"opc.ua.agent/internal/persistence"
 	"opc.ua.agent/internal/persistence/repositories"
@@ -42,14 +43,14 @@ func main() {
 	deviceRepository := repositories.NewDeviceRepository(db)
 
 	// factory
-	commandFactory := domain_commands.NewCommandFactory(ctx, deviceRepository)
+	outuputDriverFactory := app_opcua.NewOPCUAClientFactory(log)
+	commandFactory := domain_commands.NewCommandFactory(ctx, outuputDriverFactory, deviceRepository)
 
 	// mqtt client
-	mqttClient := app.NewMQTTClient(commandFactory, containerConfig, log)
+	mqttClient := app_mqtt.NewMQTTClient(commandFactory, containerConfig, log)
 	mqttClient.Connect()
 	defer mqttClient.Disconnect()
 
 	<-signalChan
 	log.Info("Shutting down...")
-
 }

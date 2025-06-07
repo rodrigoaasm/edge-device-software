@@ -10,16 +10,24 @@ type RegisterNodeCommand struct {
 	CorrelationId string
 	Device        entities.Device
 
-	log              logr.Logger
-	deviceRepository domain_interfaces.IDeviceRepository
+	log                 logr.Logger
+	deviceRepository    domain_interfaces.IDeviceRepository
+	outputDriverFactory domain_interfaces.IOutputDriverFactory
 }
 
-func New(CorrelationId string, device entities.Device, log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *RegisterNodeCommand {
+func New(
+	CorrelationId string,
+	device entities.Device,
+	log logr.Logger,
+	outputDriverFactory domain_interfaces.IOutputDriverFactory,
+	deviceRepository domain_interfaces.IDeviceRepository,
+) *RegisterNodeCommand {
 	return &RegisterNodeCommand{
-		CorrelationId:    CorrelationId,
-		Device:           device,
-		log:              log,
-		deviceRepository: deviceRepository,
+		CorrelationId:       CorrelationId,
+		Device:              device,
+		log:                 log,
+		deviceRepository:    deviceRepository,
+		outputDriverFactory: outputDriverFactory,
 	}
 }
 
@@ -33,6 +41,14 @@ func (c *RegisterNodeCommand) Execute() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.log.Info("Connecting to opcua server..")
+	opcDriver := c.outputDriverFactory.Make(c.Device)
+	if err = opcDriver.Connect(); err != nil {
+		c.log.Error(err, "Connection failed to opcua server.")
+		return nil, err
+	}
+	c.log.Info("Connected to opcua server.")
 
 	c.log.Info("Transaction committed")
 	return nil, transManager.Commit()

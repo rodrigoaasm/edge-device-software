@@ -1,4 +1,4 @@
-package app
+package app_mqtt
 
 import (
 	"encoding/json"
@@ -66,7 +66,7 @@ func (c *MQTTClient) Connect() {
 			if err == nil {
 				data, cerr := command.Execute()
 				if cerr != nil {
-					c.PublishResult(command, false, "Failed to execute command."+err.Error(), data)
+					c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)
 					return
 				}
 
