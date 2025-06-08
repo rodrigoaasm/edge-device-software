@@ -1,4 +1,4 @@
-package domain_commands_remove_node
+package remove_node
 
 import (
 	"github.com/go-logr/logr"

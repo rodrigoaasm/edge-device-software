@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/go-logr/logr"
-	domain_command_list_nodes "opc.ua.agent/internal/domain/commands/list_nodes"
-	domain_commands_register_node "opc.ua.agent/internal/domain/commands/register_node"
-	domain_commands_remove_node "opc.ua.agent/internal/domain/commands/remove_node"
+	list_nodes "opc.ua.agent/internal/domain/commands/list_nodes"
+	register_node "opc.ua.agent/internal/domain/commands/register_node"
+	remove_node "opc.ua.agent/internal/domain/commands/remove_node"
 	"opc.ua.agent/internal/domain/dto"
 	"opc.ua.agent/internal/domain/entities"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
@@ -39,15 +39,15 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 		if err != nil {
 			return nil, err
 		}
-		return domain_commands_register_node.New(command.CorrelationId, *device, log, c.outputDriverFactory, c.deviceRepository), nil
+		return register_node.New(command.CorrelationId, *device, log, c.outputDriverFactory, c.deviceRepository), nil
 	}
 
 	if command.Command == "list_opc" {
-		return domain_command_list_nodes.New(command.CorrelationId, log, c.deviceRepository), nil
+		return list_nodes.New(command.CorrelationId, log, c.deviceRepository), nil
 	}
 
 	if command.Command == "remove_opc" {
-		return domain_commands_remove_node.New(command.CorrelationId, command.Args.NodeId, log, c.deviceRepository), nil
+		return remove_node.New(command.CorrelationId, command.Args.NodeId, log, c.deviceRepository), nil
 	}
 
 	return nil, errors.New("Unknown command: " + command.Command)

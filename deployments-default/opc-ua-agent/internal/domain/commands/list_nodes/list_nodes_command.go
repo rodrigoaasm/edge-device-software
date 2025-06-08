@@ -1,4 +1,4 @@
-package domain_command_list_nodes
+package list_nodes
 
 import (
 	"fmt"

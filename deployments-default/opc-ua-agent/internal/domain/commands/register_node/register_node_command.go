@@ -1,4 +1,4 @@
-package domain_commands_register_node
+package register_node
 
 import (
 	"github.com/go-logr/logr"

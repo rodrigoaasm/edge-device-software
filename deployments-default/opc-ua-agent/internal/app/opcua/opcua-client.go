@@ -1,4 +1,4 @@
-package app_opcua
+package opcua
 
 import (
 	"context"

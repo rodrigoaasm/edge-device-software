@@ -1,4 +1,4 @@
-package app_mqtt
+package mqtt
 
 import (
 	"encoding/json"
