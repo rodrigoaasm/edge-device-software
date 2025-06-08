@@ -49,32 +49,32 @@ func (c *MQTTClient) Connect() {
 
 	c.log.Info("Subscribing MQTT client...")
 	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, func(q mqtt.Client, m mqtt.Message) {
-		var messageDTO dto.CommandDTO
+		var messageDTO dto.MessageDTO
 		if err := json.Unmarshal(m.Payload(), &messageDTO); err != nil {
 			c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
 			return
 		}
 
 		if messageDTO.DeviceId == c.config.DeviceId {
-			c.log.Info("Command (" + messageDTO.CorrelationId + ") is for me..")
-			if messageDTO.CorrelationId == "" {
-				c.log.Error(nil, "The command not have a correlation id. Ignore.")
-				return
-			}
-
-			command, err := c.commandFactory.Make(messageDTO)
-			if err == nil {
-				data, cerr := command.Execute()
-				if cerr != nil {
-					c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)
-					return
+			for _, commandDTO := range messageDTO.Commands {
+				c.log.Info("Command (" + commandDTO.CorrelationId + ") is for me..")
+				if commandDTO.CorrelationId == "" {
+					c.log.Error(nil, "The command not have a correlation id. Ignore.")
+					continue
 				}
 
-				c.PublishResult(command, true, "", data)
-				return
-			} else {
-				c.PublishResult(command, false, "Command invalid. "+err.Error(), nil)
-				return
+				command, err := c.commandFactory.Make(commandDTO)
+				if err == nil {
+					data, cerr := command.Execute()
+					if cerr != nil {
+						c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)
+						continue
+					}
+
+					c.PublishResult(command, true, "", data)
+				} else {
+					c.PublishResult(command, false, "Command invalid. "+err.Error(), nil)
+				}
 			}
 		}
 	})

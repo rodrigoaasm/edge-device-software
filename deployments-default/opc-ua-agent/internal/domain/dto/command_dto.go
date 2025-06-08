@@ -7,7 +7,11 @@ type ArgsDto struct {
 
 type CommandDTO struct {
 	CorrelationId string  `json:"correlationId"`
-	DeviceId      string  `json:"deviceId"`
 	Command       string  `json:"command"`
 	Args          ArgsDto `json:"args"`
+}
+
+type MessageDTO struct {
+	DeviceId string       `json:"deviceId"`
+	Commands []CommandDTO `json:"commands"`
 }
