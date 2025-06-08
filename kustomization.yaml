@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployments-default/nanomq/deployment.yaml
+- deployments-default/influxdb/deployment.yaml
+- deployments-default/telegraf-agg/deployment.yaml
+- deployments-default/telegraf-bridge/deployment.yaml
+- ed-operator/deployment.yaml
+- nodeport-default/nodeports.yaml
+
+images:
+- name: emqx/nanomq
+  newName: emqx/nanomq
+  newTag: latest
+
+- name: influxdb
+  newName: rodrigoasmaia/influxdb
+  newTag: 0.3.0
+
+- name: telegraf-agg
+  newName: rodrigoasmaia/telegraf-agg
+  newTag: 0.3.0
+
+- name: telegraf-bridge
+  newName: rodrigoasmaia/telegraf-bridge
+  newTag: 0.3.0
+
+- name: ed-operator
+  newName: rodrigoasmaia/ed-operator
+  newTag: 0.3.0

@@ -18,7 +18,7 @@ spec:
       serviceAccountName: controller-manager
       containers:
       - name: telegraf-agg
-        image: rodrigoasmaia/telegraf-agg:0.1.0
+        image: telegraf-agg
         resources:
           limits:
             memory: "256Mi"
