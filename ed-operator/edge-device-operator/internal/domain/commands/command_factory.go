@@ -2,6 +2,9 @@ package domain_commands
 
 import (
 	"context"
+	"ed-operator/internal/domain/commands/deploy"
+	"ed-operator/internal/domain/commands/undeploy"
+	"ed-operator/internal/domain/commands/update_deploy"
 	"ed-operator/internal/domain/dto"
 	"ed-operator/internal/domain/interfaces"
 	"errors"
@@ -18,13 +21,13 @@ func NewCommandFactory(ctx context.Context, drc interfaces.IReconcilerClient) *C
 
 func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 	if command.Command == "deploy" {
-		return NewDeployCommand(command.Args.Name, command.Args.Image, command.Args.Env), nil
+		return deploy.NewDeployCommand(command.CorrelationId, command.Args.Name, command.Args.Image, command.Args.Env), nil
 	}
 	if command.Command == "undeploy" {
-		return NewUndeployCommand(command.Args.Name), nil
+		return undeploy.NewUndeployCommand(command.CorrelationId, command.Args.Name), nil
 	}
 	if command.Command == "update" {
-		return NewUpdateDeployCommand(command.Args.Name, command.Args.Image, command.Args.Env), nil
+		return update_deploy.NewUpdateDeployCommand(command.CorrelationId, command.Args.Name, command.Args.Image, command.Args.Env), nil
 	}
 
 	return nil, errors.New("Unknown command: " + command.Command)

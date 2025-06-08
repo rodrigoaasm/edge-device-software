@@ -7,8 +7,9 @@ type ArgsDto struct {
 }
 
 type CommandDTO struct {
-	Command string  `json:"command"`
-	Args    ArgsDto `json:"args"`
+	CorrelationId string  `json:"correlationId"`
+	Command       string  `json:"command"`
+	Args          ArgsDto `json:"args"`
 }
 
 /*

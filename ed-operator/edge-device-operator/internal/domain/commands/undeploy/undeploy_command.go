@@ -1,4 +1,4 @@
-package domain_commands
+package undeploy
 
 import (
 	"context"
@@ -10,16 +10,22 @@ import (
 )
 
 type UndeployCommand struct {
-	Name string
+	CorrelationId string
+	Name          string
 
 	ctx              context.Context
 	reconcilerClient interfaces.IReconcilerClient
 }
 
-func NewUndeployCommand(name string) *UndeployCommand {
+func NewUndeployCommand(correlationId string, name string) *UndeployCommand {
 	return &UndeployCommand{
-		Name: name,
+		CorrelationId: correlationId,
+		Name:          name,
 	}
+}
+
+func (d *UndeployCommand) GetCorrelationId() string {
+	return d.CorrelationId
 }
 
 func (d *UndeployCommand) SetContext(ctx context.Context) {
@@ -30,7 +36,7 @@ func (d *UndeployCommand) SetReconcilerClient(drc interfaces.IReconcilerClient) 
 	d.reconcilerClient = drc
 }
 
-func (d *UndeployCommand) Execute() error {
+func (d *UndeployCommand) Execute() (interface{}, error) {
 	log := log.FromContext(d.ctx)
 	log.Info("Undeploying " + d.Name)
 
@@ -40,6 +46,7 @@ func (d *UndeployCommand) Execute() error {
 			Namespace: "ed-system",
 		},
 	}
+	dErr := d.reconcilerClient.Delete(d.ctx, dep)
 
-	return d.reconcilerClient.Delete(d.ctx, dep)
+	return nil, dErr
 }

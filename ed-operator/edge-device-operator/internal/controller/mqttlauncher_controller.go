@@ -43,16 +43,16 @@ type MQTTLauncherReconciler struct {
 	mqttClient mqtt.Client
 }
 
-func (r *MQTTLauncherReconciler) PublishResult(ctx context.Context, Success bool, Message string) error {
+func (r *MQTTLauncherReconciler) PublishResult(ctx context.Context, correlationId string, success bool, message string, data interface{}) error {
 	log := log.FromContext(ctx)
-	if Success {
+	if success {
 		log.Info("Command executed successfully")
 	} else {
-		log.Error(nil, "Command execution failed. Message: "+Message)
+		log.Error(nil, "Command execution failed. Message: "+message)
 	}
 
 	log.Info("Publishing result...")
-	payload, err := json.Marshal(dto.ResultDto{Success: Success, Message: Message})
+	payload, err := json.Marshal(dto.ResultDto{CorrelationId: correlationId, Success: success, Message: message})
 	if err != nil {
 		log.Error(err, "Failed to marshal result")
 		return nil
@@ -88,22 +88,23 @@ func (r *MQTTLauncherReconciler) Start(ctx context.Context) error {
 		log.Info("Received message: " + string(m.Payload()))
 		var commandDTO dto.CommandDTO
 		if err := json.Unmarshal(m.Payload(), &commandDTO); err != nil {
-			r.PublishResult(ctx, false, "Failed to interpret command: "+err.Error())
+			log.Error(err, "Failed to interpret command: "+err.Error())
 			return
 		}
 
 		log.Info("Executing command: " + commandDTO.Command)
 		command, err := commandFactory.Make(commandDTO)
 		if err == nil {
-			if cerr := command.Execute(); cerr != nil {
-				r.PublishResult(ctx, false, "Failed to execute command: "+cerr.Error())
+			data, cerr := command.Execute()
+			if cerr != nil {
+				r.PublishResult(ctx, command.GetCorrelationId(), false, "Failed to execute command: "+cerr.Error(), nil)
 				return
 			}
-			r.PublishResult(ctx, true, "")
+			r.PublishResult(ctx, command.GetCorrelationId(), true, "", data)
 			return
 		}
 
-		r.PublishResult(ctx, false, "Failed to execute command: "+err.Error())
+		r.PublishResult(ctx, command.GetCorrelationId(), false, "Failed to execute command: "+err.Error(), nil)
 	})
 
 	return nil

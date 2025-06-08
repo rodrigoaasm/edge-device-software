@@ -1,4 +1,4 @@
-package domain_commands
+package deploy
 
 import (
 	"context"
@@ -10,21 +10,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+type Env map[string]string
+
 type DeployCommand struct {
-	Name  string
-	Image string
-	Env   Env
+	CorrelationId string
+	Name          string
+	Image         string
+	Env           Env
 
 	ctx              context.Context
 	reconcilerClient interfaces.IReconcilerClient
 }
 
-func NewDeployCommand(name string, image string, env Env) *DeployCommand {
+func NewDeployCommand(correlationId string, name string, image string, env Env) *DeployCommand {
 	return &DeployCommand{
-		Name:  name,
-		Image: image,
-		Env:   env,
+		CorrelationId: correlationId,
+		Name:          name,
+		Image:         image,
+		Env:           env,
 	}
+}
+
+func (d *DeployCommand) GetCorrelationId() string {
+	return d.CorrelationId
 }
 
 func (d *DeployCommand) SetContext(ctx context.Context) {
@@ -35,7 +43,7 @@ func (d *DeployCommand) SetReconcilerClient(drc interfaces.IReconcilerClient) {
 	d.reconcilerClient = drc
 }
 
-func (d *DeployCommand) Execute() error {
+func (d *DeployCommand) Execute() (interface{}, error) {
 	log := log.FromContext(d.ctx)
 	log.Info("Deploying " + d.Name + "::" + d.Image)
 	repl := int32(1)
@@ -67,5 +75,7 @@ func (d *DeployCommand) Execute() error {
 		},
 	}
 
-	return d.reconcilerClient.Create(d.ctx, dep)
+	dErr := d.reconcilerClient.Create(d.ctx, dep)
+
+	return nil, dErr
 }
