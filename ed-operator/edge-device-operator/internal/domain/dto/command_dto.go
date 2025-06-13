@@ -12,6 +12,7 @@ type CommandDTO struct {
 	Args          ArgsDto `json:"args"`
 }
 
-/*
-{"name":"telegraf","image":"influxdb:2.7.11-alpine","env":{}}
-*/
+type MessageDTO struct {
+	DeviceId string       `json:"deviceId"`
+	Commands []CommandDTO `json:"commands"`
+}

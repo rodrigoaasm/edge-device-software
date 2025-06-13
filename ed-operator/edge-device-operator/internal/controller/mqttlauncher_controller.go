@@ -18,12 +18,7 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"math/rand"
-	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,8 +26,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1 "ed-operator/api/v1"
+	"ed-operator/config"
+	"ed-operator/internal/app/mqtt"
 	domain_commands "ed-operator/internal/domain/commands"
-	"ed-operator/internal/domain/dto"
 )
 
 // MQTTLauncherReconciler reconciles a MQTTLauncher object
@@ -40,72 +36,15 @@ type MQTTLauncherReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	mqttClient mqtt.Client
-}
-
-func (r *MQTTLauncherReconciler) PublishResult(ctx context.Context, correlationId string, success bool, message string, data interface{}) error {
-	log := log.FromContext(ctx)
-	if success {
-		log.Info("Command executed successfully")
-	} else {
-		log.Error(nil, "Command execution failed. Message: "+message)
-	}
-
-	log.Info("Publishing result...")
-	payload, err := json.Marshal(dto.ResultDto{CorrelationId: correlationId, Success: success, Message: message})
-	if err != nil {
-		log.Error(err, "Failed to marshal result")
-		return nil
-	}
-	log.Info(string(payload))
-	if token := r.mqttClient.Publish("deployments/results", 0, false, payload); token.Wait() && token.Error() != nil {
-		log.Error(token.Error(), "Failed to publish result")
-		return nil
-	}
-	log.Info("Result published")
-	return nil
+	mqttClient *mqtt.MQTTClient
 }
 
 func (r *MQTTLauncherReconciler) Start(ctx context.Context) error {
 	log := log.FromContext(ctx)
-
 	log.Info("Preparing MQTT client...")
-	opts := mqtt.NewClientOptions().AddBroker("tcp://nanomq:1883")
-	rand.Seed(time.Now().UnixNano())
-	opts.SetClientID(fmt.Sprintf("mqtt-operator-%d", rand.Intn(10000)))
-	r.mqttClient = mqtt.NewClient(opts)
-
-	log.Info("Connecting MQTT client...")
-	if token := r.mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		log.Error(token.Error(), "Failed to connect MQTT client")
-		return token.Error()
-	}
-	log.Info("MQTT client connected")
-
-	log.Info("Subscribing MQTT client...")
 	commandFactory := domain_commands.NewCommandFactory(ctx, r.Client)
-	r.mqttClient.Subscribe("deployments/start", 0, func(c mqtt.Client, m mqtt.Message) {
-		log.Info("Received message: " + string(m.Payload()))
-		var commandDTO dto.CommandDTO
-		if err := json.Unmarshal(m.Payload(), &commandDTO); err != nil {
-			log.Error(err, "Failed to interpret command: "+err.Error())
-			return
-		}
-
-		log.Info("Executing command: " + commandDTO.Command)
-		command, err := commandFactory.Make(commandDTO)
-		if err == nil {
-			data, cerr := command.Execute()
-			if cerr != nil {
-				r.PublishResult(ctx, command.GetCorrelationId(), false, "Failed to execute command: "+cerr.Error(), nil)
-				return
-			}
-			r.PublishResult(ctx, command.GetCorrelationId(), true, "", data)
-			return
-		}
-
-		r.PublishResult(ctx, command.GetCorrelationId(), false, "Failed to execute command: "+err.Error(), nil)
-	})
+	r.mqttClient = mqtt.NewMQTTClient(commandFactory, config.NewContainerConfig(), ctx)
+	r.mqttClient.Connect()
 
 	return nil
 }

@@ -13,9 +13,6 @@ kubectl apply -f roles/role_manager_binding.yaml
 kubectl apply -f roles/role_deployment_binding.yaml
 echo "service account created"
 
-echo "creating pv for influxdb"
-kubectl apply -f ../../volumes-default/influxdb_pv.yaml
-
 echo "creating services..."
 kubectl apply -k .
 
