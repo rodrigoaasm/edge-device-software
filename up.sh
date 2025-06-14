@@ -13,6 +13,9 @@ kubectl apply -f roles/role_manager_binding.yaml
 kubectl apply -f roles/role_deployment_binding.yaml
 echo "service account created"
 
+echo "creating profiles"
+kubectl apply -f priority-profiles/profiles.yaml
+
 echo "creating services..."
 kubectl apply -k .
 

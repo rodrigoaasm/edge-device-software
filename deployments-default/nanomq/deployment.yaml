@@ -15,6 +15,7 @@ spec:
       labels:
         app: nanomq
     spec:
+      priorityClassName: default-service
       containers:
       - name: nanomq
         image: emqx/nanomq:latest
@@ -24,10 +25,10 @@ spec:
         - containerPort: 8081   # Porta HTTP server/API (opcional)
         resources:
           limits:
-            memory: "512Mi"
+            memory: "128Mi"
             cpu: "200m"
           requests:
-            memory: "256Mi"
+            memory: "64Mi"
             cpu: "100m"
         volumeMounts:
         - name: config

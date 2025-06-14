@@ -16,6 +16,7 @@ spec:
         app: operator
     spec:
       serviceAccountName: controller-manager
+      priorityClassName: default-service
       containers:
       - name: operator
         image: ed-operator
@@ -25,7 +26,7 @@ spec:
         resources:
           limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "500m"
           requests:
             memory: "128Mi"
             cpu: "100m"

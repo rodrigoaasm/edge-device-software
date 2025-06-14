@@ -1,0 +1,23 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: default-service
+value: 10000
+globalDefault: false
+description: "Used by default services"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: iot-agent
+value: 9999
+globalDefault: false
+description: "Used by IoT-agents"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: single-service
+value: 1
+globalDefault: true
+description: "Used for another services"

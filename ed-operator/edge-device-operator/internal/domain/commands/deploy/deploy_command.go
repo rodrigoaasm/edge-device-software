@@ -6,6 +6,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corekubev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -68,6 +69,16 @@ func (d *DeployCommand) Execute() (interface{}, error) {
 							Name:  d.Name,
 							Image: d.Image,
 							Ports: []corekubev1.ContainerPort{{ContainerPort: 80}},
+							Resources: corekubev1.ResourceRequirements{
+								Limits: corekubev1.ResourceList{
+									corekubev1.ResourceCPU:    *resource.NewMilliQuantity(500, resource.DecimalSI),
+									corekubev1.ResourceMemory: *resource.NewQuantity(256*1024*1024, resource.BinarySI),
+								},
+								Requests: corekubev1.ResourceList{
+									corekubev1.ResourceCPU:    *resource.NewMilliQuantity(200, resource.DecimalSI),
+									corekubev1.ResourceMemory: *resource.NewQuantity(128*1024*1024, resource.BinarySI),
+								},
+							},
 						},
 					},
 				},

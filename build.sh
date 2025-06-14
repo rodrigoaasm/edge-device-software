@@ -3,9 +3,14 @@ set -e
 
 SERVICE=${1}
 VERSION=${2}
+BUILD_DIR="deployments-default"
+
+if [[ -n "${3}" ]]; then
+  BUILD_DIR=${3}
+fi
 
 if [[ -z "$SERVICE" || -z "$VERSION" ]]; then
-  echo "Use: $0 <serviço> <versão>"
+  echo "Use: $0 <serviço> <versão> <build-dir>"
   echo "Ex.: $0 service v1.0.0"
   exit 1
 fi
@@ -14,8 +19,8 @@ if [ $SERVICE = 'ed-operator' ]; then
   DOCKERFILE="ed-operator/edge-device-operator/Dockerfile"
   BUILD_DIR="ed-operator/edge-device-operator/"
 else
-  DOCKERFILE="deployments-default/${SERVICE}/Dockerfile"
-  BUILD_DIR="deployments-default/${SERVICE}/"
+  DOCKERFILE="${BUILD_DIR}/${SERVICE}/Dockerfile"
+  BUILD_DIR="${BUILD_DIR}/${SERVICE}/"
 fi
 
 if [[ ! -f "$DOCKERFILE" ]]; then

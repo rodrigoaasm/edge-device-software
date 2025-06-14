@@ -15,6 +15,7 @@ spec:
       labels:
         app: influxdb    
     spec:
+      priorityClassName: default-service
       containers:
       - name: influxdb
         image: influxdb
@@ -37,10 +38,10 @@ spec:
         resources:
           limits:
             memory: "1024Mi"
-            cpu: "400m"
+            cpu: "1000m"
           requests:
             memory: "512Mi"
-            cpu: "200m"
+            cpu: "500m"
       volumes:
         - name: influxdb-data
           persistentVolumeClaim:

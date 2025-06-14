@@ -15,7 +15,7 @@ spec:
       labels:
         app: telegraf-agg
     spec:
-      serviceAccountName: controller-manager
+      priorityClassName: default-service
       containers:
       - name: telegraf-agg
         image: telegraf-agg

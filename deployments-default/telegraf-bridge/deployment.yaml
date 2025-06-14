@@ -15,7 +15,7 @@ spec:
       labels:
         app: telegraf-bridge
     spec:
-      serviceAccountName: controller-manager
+      priorityClassName: default-service
       containers:
       - name: telegraf-bridge
         image: telegraf-bridge
