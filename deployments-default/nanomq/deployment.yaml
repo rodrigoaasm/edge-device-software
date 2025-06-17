@@ -54,7 +54,7 @@ kind: Service
 metadata:
   name: nanomq
   labels:
-    app: nanomq
+    app: nanom
   namespace: ed-system
 spec:
   selector:

@@ -2,6 +2,7 @@ package update_deploy
 
 import (
 	"context"
+	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -15,20 +16,16 @@ type Env map[string]string
 
 type UpdateDeployCommand struct {
 	CorrelationId string
-	Name          string
-	Image         string
-	Env           Env
+	Microservice  *entities.Microservice
 
 	ctx              context.Context
 	reconcilerClient interfaces.IReconcilerClient
 }
 
-func NewUpdateDeployCommand(correlationId string, name string, image string, env Env) *UpdateDeployCommand {
+func NewUpdateDeployCommand(correlationId string, microservice *entities.Microservice) *UpdateDeployCommand {
 	return &UpdateDeployCommand{
 		CorrelationId: correlationId,
-		Name:          name,
-		Image:         image,
-		Env:           env,
+		Microservice:  microservice,
 	}
 }
 
@@ -46,7 +43,7 @@ func (d *UpdateDeployCommand) SetReconcilerClient(drc interfaces.IReconcilerClie
 
 func (d *UpdateDeployCommand) Execute() (interface{}, error) {
 	log := log.FromContext(d.ctx)
-	log.Info("Update Deploying " + d.Name + "::" + d.Image)
+	log.Info("Update Deploying " + d.Microservice.Name + "::" + d.Microservice.Image)
 	repl := int32(1)
 	maxUnavailable := intstr.IntOrString{
 		Type:   intstr.Int,
@@ -59,26 +56,29 @@ func (d *UpdateDeployCommand) Execute() (interface{}, error) {
 	podSpec := corekubev1.PodSpec{
 		Containers: []corekubev1.Container{
 			{
-				Name:  d.Name,
-				Image: d.Image,
-				Ports: []corekubev1.ContainerPort{{ContainerPort: 80}},
+				Name:  d.Microservice.Name,
+				Image: d.Microservice.Image,
 			},
 		},
 	}
 
-	if d.Name == "operator" {
+	if d.Microservice.Name == "operator" {
 		podSpec.ServiceAccountName = "controller-manager"
+	}
+
+	if d.Microservice.Port > 0 {
+		podSpec.Containers[0].Ports = []corekubev1.ContainerPort{{ContainerPort: int32(d.Microservice.Port)}}
 	}
 
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      d.Name,
+			Name:      d.Microservice.Name,
 			Namespace: "ed-system",
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &repl,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": d.Name},
+				MatchLabels: map[string]string{"app": d.Microservice.Name},
 			},
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
@@ -89,7 +89,7 @@ func (d *UpdateDeployCommand) Execute() (interface{}, error) {
 			},
 			Template: corekubev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": d.Name},
+					Labels: map[string]string{"app": d.Microservice.Name},
 				},
 				Spec: podSpec,
 			},

@@ -2,33 +2,38 @@ package deploy
 
 import (
 	"context"
+	cmd_commons "ed-operator/internal/domain/commands/commons"
+	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
+	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 	corekubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type Env map[string]string
-
 type DeployCommand struct {
 	CorrelationId string
-	Name          string
-	Image         string
-	Env           Env
+	Microservice  *entities.Microservice
 
 	ctx              context.Context
 	reconcilerClient interfaces.IReconcilerClient
 }
 
-func NewDeployCommand(correlationId string, name string, image string, env Env) *DeployCommand {
+func NewDeployCommand(
+	correlationId string,
+	microservice *entities.Microservice,
+) *DeployCommand {
 	return &DeployCommand{
 		CorrelationId: correlationId,
-		Name:          name,
-		Image:         image,
-		Env:           env,
+		Microservice:  microservice,
+
+		ctx:              context.Background(),
+		reconcilerClient: nil,
 	}
 }
 
@@ -46,47 +51,122 @@ func (d *DeployCommand) SetReconcilerClient(drc interfaces.IReconcilerClient) {
 
 func (d *DeployCommand) Execute() (interface{}, error) {
 	log := log.FromContext(d.ctx)
-	log.Info("Deploying " + d.Name + "::" + d.Image)
 	repl := int32(1)
 
-	dep := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      d.Name,
-			Namespace: "ed-system",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &repl,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": d.Name},
-			},
-			Template: corekubev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": d.Name},
-				},
-				Spec: corekubev1.PodSpec{
-					Containers: []corekubev1.Container{
-						{
-							Name:  d.Name,
-							Image: d.Image,
-							Ports: []corekubev1.ContainerPort{{ContainerPort: 80}},
-							Resources: corekubev1.ResourceRequirements{
-								Limits: corekubev1.ResourceList{
-									corekubev1.ResourceCPU:    *resource.NewMilliQuantity(500, resource.DecimalSI),
-									corekubev1.ResourceMemory: *resource.NewQuantity(256*1024*1024, resource.BinarySI),
-								},
-								Requests: corekubev1.ResourceList{
-									corekubev1.ResourceCPU:    *resource.NewMilliQuantity(200, resource.DecimalSI),
-									corekubev1.ResourceMemory: *resource.NewQuantity(128*1024*1024, resource.BinarySI),
-								},
-							},
-						},
+	podSpec := d.createPodSpec()
+	if d.Microservice.Port > 0 {
+		podSpec.Containers[0].Ports = []corekubev1.ContainerPort{{ContainerPort: int32(d.Microservice.Port)}}
+	}
+
+	log.Info("Deploying " + d.Microservice.Name + "::" + d.Microservice.Image)
+	if dErr := d.reconcilerClient.Create(d.ctx, d.createDeploymentSchema(podSpec, repl)); dErr != nil {
+		return nil, dErr
+	}
+
+	log.Info("Open internal port (" + string(d.Microservice.InternalPort) + ") to " + d.Microservice.Name)
+	if d.Microservice.InternalPort > 0 {
+		if dErr := d.reconcilerClient.Create(d.ctx, d.createServiceSchema(apiv1.ServiceTypeClusterIP)); dErr != nil {
+			return nil, dErr
+		}
+	}
+
+	log.Info("Open external port (" + string(d.Microservice.ExternalPort) + ") to " + d.Microservice.Name)
+	if d.Microservice.ExternalPort > 0 {
+		if dErr := d.reconcilerClient.Create(d.ctx, d.createServiceSchema(apiv1.ServiceTypeNodePort)); dErr != nil {
+			return nil, dErr
+		}
+	}
+
+	return nil, nil
+}
+
+func (d *DeployCommand) createPodSpec() corekubev1.PodSpec {
+	podSpec := corekubev1.PodSpec{
+		Containers: []corekubev1.Container{
+			{
+				Name:  d.Microservice.Name,
+				Image: d.Microservice.Image,
+				Resources: corekubev1.ResourceRequirements{
+					Limits: corekubev1.ResourceList{
+						corekubev1.ResourceCPU: *resource.NewMilliQuantity(
+							int64(d.Microservice.LimitCPU), resource.DecimalSI,
+						),
+						corekubev1.ResourceMemory: *resource.NewQuantity(
+							int64(d.Microservice.LimitMemory)*1024*1024, resource.BinarySI,
+						),
+					},
+					Requests: corekubev1.ResourceList{
+						corekubev1.ResourceCPU: *resource.NewMilliQuantity(
+							int64(d.Microservice.RequestCPU), resource.DecimalSI,
+						),
+						corekubev1.ResourceMemory: *resource.NewQuantity(
+							int64(d.Microservice.RequestMemory)*1024*1024, resource.BinarySI,
+						),
 					},
 				},
 			},
 		},
 	}
 
-	dErr := d.reconcilerClient.Create(d.ctx, dep)
+	if d.Microservice.Name == "operator" {
+		podSpec.ServiceAccountName = "controller-manager"
+	}
 
-	return nil, dErr
+	if _, err := strconv.Atoi(d.Microservice.PriorityProfile); err != nil {
+		podSpec.PriorityClassName = d.Microservice.PriorityProfile
+	}
+
+	return podSpec
+}
+
+func (d *DeployCommand) createDeploymentSchema(
+	podSpec corekubev1.PodSpec,
+	repl int32,
+) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      d.Microservice.Name,
+			Namespace: "ed-system",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &repl,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": d.Microservice.Name},
+			},
+			Template: corekubev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": d.Microservice.Name},
+				},
+				Spec: podSpec,
+			},
+		},
+	}
+}
+
+func (d *DeployCommand) createServiceSchema(t corekubev1.ServiceType) *apiv1.Service {
+	portSchema := apiv1.ServicePort{
+		Protocol:   apiv1.ProtocolTCP,
+		Port:       int32(d.Microservice.Port),
+		TargetPort: intstr.FromInt(int(d.Microservice.InternalPort)),
+	}
+
+	if t == corekubev1.ServiceTypeNodePort {
+		portSchema.NodePort = int32(d.Microservice.ExternalPort)
+	}
+
+	return &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cmd_commons.GetServiceName(d.Microservice.Name, t),
+			Namespace: "ed-system",
+		},
+		Spec: apiv1.ServiceSpec{
+			Selector: map[string]string{
+				"app": cmd_commons.GetServiceName(d.Microservice.Name, t),
+			},
+			Type: t,
+			Ports: []apiv1.ServicePort{
+				portSchema,
+			},
+		},
+	}
 }

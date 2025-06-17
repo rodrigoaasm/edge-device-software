@@ -68,8 +68,7 @@ func (c *MQTTClient) Connect() {
 					continue
 				}
 
-				command, err := c.commandFactory.Make(commandDTO)
-				if err == nil {
+				if command, err := c.commandFactory.Make(commandDTO); err == nil {
 					data, cerr := command.Execute()
 					if cerr != nil {
 						c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)

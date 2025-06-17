@@ -2,10 +2,14 @@ package undeploy
 
 import (
 	"context"
+	command_commons "ed-operator/internal/domain/commands/commons"
 	"ed-operator/internal/domain/interfaces"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corekubev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -46,7 +50,35 @@ func (d *UndeployCommand) Execute() (interface{}, error) {
 			Namespace: "ed-system",
 		},
 	}
-	dErr := d.reconcilerClient.Delete(d.ctx, dep)
 
-	return nil, dErr
+	if dErr := d.reconcilerClient.Delete(d.ctx, dep); dErr != nil {
+		return nil, dErr
+	}
+	log.Info("Searching for ports attached to the '" + d.Name + "' service")
+	if dErr := d.deleteService(corekubev1.ServiceTypeClusterIP); dErr != nil {
+		return nil, dErr
+	}
+	if dErr := d.deleteService(corekubev1.ServiceTypeNodePort); dErr != nil {
+		return nil, dErr
+	}
+
+	return nil, nil
+}
+
+func (d *UndeployCommand) deleteService(t corekubev1.ServiceType) error {
+	log := log.FromContext(d.ctx)
+
+	var svc corev1.Service
+	serviceClusterName := command_commons.GetServiceName(d.Name, t)
+	if dErr := d.reconcilerClient.Get(d.ctx, types.NamespacedName{
+		Name:      serviceClusterName,
+		Namespace: "ed-system",
+	}, &svc); dErr == nil {
+		log.Info("Removing the '" + serviceClusterName + "' service")
+		if dErr := d.reconcilerClient.Delete(d.ctx, &svc); dErr != nil {
+			return dErr
+		}
+	}
+
+	return nil
 }

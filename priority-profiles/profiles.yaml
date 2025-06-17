@@ -12,12 +12,12 @@ metadata:
   name: iot-agent
 value: 9999
 globalDefault: false
-description: "Used by IoT-agents"
+description: "Used by iot-agent"
 ---
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
-  name: single-service
+  name: simple-service
 value: 1
 globalDefault: true
 description: "Used for another services"
