@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -24,6 +25,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,7 +41,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	corev1 "ed-operator/api/v1"
+	"ed-operator/config"
+	"ed-operator/internal/app/mqtt"
 	"ed-operator/internal/controller"
+	domain_commands "ed-operator/internal/domain/commands"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -208,12 +213,30 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctrl.SetLogger(zap.New(zap.UseDevMode(false), zap.Level(zapcore.WarnLevel)))
+	configMngr := config.NewContainerConfig()
+	commandFactory := domain_commands.NewCommandFactory(context.Background(), mgr.GetClient())
+	mqttClient := mqtt.NewMQTTClient(commandFactory, configMngr, context.Background())
+
 	mqttLauncher := &controller.MQTTLauncherReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+
+		MqttClient: mqttClient,
+	}
+
+	podWatcher := &controller.PodPreemptionReconciler{
+		Client: mgr.GetClient(),
+
+		MqttClient: mqttClient,
 	}
 
 	if err = mqttLauncher.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MQTTLauncher")
+		os.Exit(1)
+	}
+
+	if err = podWatcher.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MQTTLauncher")
 		os.Exit(1)
 	}

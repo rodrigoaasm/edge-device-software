@@ -26,9 +26,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1 "ed-operator/api/v1"
-	"ed-operator/config"
 	"ed-operator/internal/app/mqtt"
-	domain_commands "ed-operator/internal/domain/commands"
 )
 
 // MQTTLauncherReconciler reconciles a MQTTLauncher object
@@ -36,15 +34,13 @@ type MQTTLauncherReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	mqttClient *mqtt.MQTTClient
+	MqttClient *mqtt.MQTTClient
 }
 
 func (r *MQTTLauncherReconciler) Start(ctx context.Context) error {
 	log := log.FromContext(ctx)
 	log.Info("Preparing MQTT client...")
-	commandFactory := domain_commands.NewCommandFactory(ctx, r.Client)
-	r.mqttClient = mqtt.NewMQTTClient(commandFactory, config.NewContainerConfig(), ctx)
-	r.mqttClient.Connect()
+	r.MqttClient.Connect()
 
 	return nil
 }
@@ -66,7 +62,6 @@ func (r *MQTTLauncherReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	_ = logf.FromContext(ctx)
 
 	// TODO(user): your logic here
-
 	return ctrl.Result{}, nil
 }
 
