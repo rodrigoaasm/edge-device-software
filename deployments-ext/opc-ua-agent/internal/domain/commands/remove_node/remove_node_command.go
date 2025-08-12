@@ -3,6 +3,7 @@ package remove_node
 import (
 	"github.com/go-logr/logr"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
+	"opc.ua.agent/internal/domain/services"
 )
 
 type RemoveNodeCommand struct {
@@ -11,14 +12,22 @@ type RemoveNodeCommand struct {
 
 	log              logr.Logger
 	deviceRepository domain_interfaces.IDeviceRepository
+	outputClientsMng *services.OutputClientsManagerService
 }
 
-func New(correlationId string, deviceId string, log logr.Logger, deviceRepository domain_interfaces.IDeviceRepository) *RemoveNodeCommand {
+func New(
+	correlationId string,
+	deviceId string,
+	log logr.Logger,
+	deviceRepository domain_interfaces.IDeviceRepository,
+	outputClientsMng *services.OutputClientsManagerService,
+) *RemoveNodeCommand {
 	return &RemoveNodeCommand{
 		CorrelationId:    correlationId,
 		DeviceId:         deviceId,
 		log:              log,
 		deviceRepository: deviceRepository,
+		outputClientsMng: outputClientsMng,
 	}
 }
 
@@ -32,6 +41,14 @@ func (c *RemoveNodeCommand) Execute() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.log.Info("Disconnecting from opcua server..")
+	if err = c.outputClientsMng.RemoveClient(c.DeviceId); err != nil {
+		c.log.Error(err, "Unable to disconnect to opcua server. Rollback transaction.")
+		transManager.Rollback()
+		return nil, err
+	}
+	c.log.Info("Disconnected from opcua server.")
 
 	err = transManager.Commit()
 	if err != nil {

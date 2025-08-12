@@ -11,23 +11,27 @@ import (
 	"opc.ua.agent/internal/domain/dto"
 	"opc.ua.agent/internal/domain/entities"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
+	"opc.ua.agent/internal/domain/services"
 )
 
 type CommandFactory struct {
-	ctx                 context.Context
-	deviceRepository    domain_interfaces.IDeviceRepository
-	outputDriverFactory domain_interfaces.IOutputDriverFactory
+	ctx                         context.Context
+	deviceRepository            domain_interfaces.IDeviceRepository
+	outputDriverFactory         domain_interfaces.IOutputDriverFactory
+	outputClientsManagerService *services.OutputClientsManagerService
 }
 
 func NewCommandFactory(
 	ctx context.Context,
 	outputDriverFactory domain_interfaces.IOutputDriverFactory,
 	deviceRepository domain_interfaces.IDeviceRepository,
+	outputClientsManagerService *services.OutputClientsManagerService,
 ) *CommandFactory {
 	return &CommandFactory{
-		ctx:                 ctx,
-		deviceRepository:    deviceRepository,
-		outputDriverFactory: outputDriverFactory,
+		ctx:                         ctx,
+		deviceRepository:            deviceRepository,
+		outputDriverFactory:         outputDriverFactory,
+		outputClientsManagerService: outputClientsManagerService,
 	}
 }
 
@@ -39,7 +43,13 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 		if err != nil {
 			return nil, err
 		}
-		return register_node.New(command.CorrelationId, *device, log, c.outputDriverFactory, c.deviceRepository), nil
+		return register_node.New(
+			command.CorrelationId,
+			*device, log,
+			c.outputDriverFactory,
+			c.deviceRepository,
+			c.outputClientsManagerService,
+		), nil
 	}
 
 	if command.Command == "list_opc" {
@@ -47,7 +57,13 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 	}
 
 	if command.Command == "remove_opc" {
-		return remove_node.New(command.CorrelationId, command.Args.NodeId, log, c.deviceRepository), nil
+		return remove_node.New(
+			command.CorrelationId,
+			command.Args.NodeId,
+			log,
+			c.deviceRepository,
+			c.outputClientsManagerService,
+		), nil
 	}
 
 	return nil, errors.New("Unknown command: " + command.Command)

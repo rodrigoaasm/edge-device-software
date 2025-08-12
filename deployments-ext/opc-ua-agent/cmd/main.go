@@ -13,6 +13,7 @@ import (
 	app_mqtt "opc.ua.agent/internal/app/mqtt"
 	app_opcua "opc.ua.agent/internal/app/opcua"
 	domain_commands "opc.ua.agent/internal/domain/commands"
+	"opc.ua.agent/internal/domain/services"
 	"opc.ua.agent/internal/persistence"
 	"opc.ua.agent/internal/persistence/repositories"
 )
@@ -42,9 +43,17 @@ func main() {
 	// Init repositories
 	deviceRepository := repositories.NewDeviceRepository(db)
 
+	// services
+	outputClientsManagerService := services.NewOutputClientsManagerService(log)
+
 	// factory
-	outuputDriverFactory := app_opcua.NewOPCUAClientFactory(log)
-	commandFactory := domain_commands.NewCommandFactory(ctx, outuputDriverFactory, deviceRepository)
+	outputDriverFactory := app_opcua.NewOPCUAClientFactory(log)
+	commandFactory := domain_commands.NewCommandFactory(
+		ctx,
+		outputDriverFactory,
+		deviceRepository,
+		outputClientsManagerService,
+	)
 
 	// mqtt client
 	mqttClient := app_mqtt.NewMQTTClient(commandFactory, containerConfig, log)

@@ -11,12 +11,7 @@ services:
       DEVICE_ID: "abc123"
       LOG_LEVEL: "debug"
       BROKER_URL: "tcp://172.31.212.236:31883"
-
-  opc-node-1:
-    build:
-      context: .
-      dockerfile: ../opc-ua-server/Dockerfile.server
-
+      
 networks:
   default:
     name: opc-dev

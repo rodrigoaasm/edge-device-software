@@ -67,23 +67,23 @@ func (c *MQTTClient) Connect() {
 				if err == nil {
 					data, cerr := command.Execute()
 					if cerr != nil {
-						c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)
+						c.PublishResult(commandDTO.CorrelationId, false, "Failed to execute command."+cerr.Error(), data)
 						continue
 					}
 
-					c.PublishResult(command, true, "", data)
+					c.PublishResult(commandDTO.CorrelationId, true, "", data)
 				} else {
-					c.PublishResult(command, false, "Command invalid. "+err.Error(), nil)
+					c.PublishResult(commandDTO.CorrelationId, false, "Command invalid. "+err.Error(), nil)
 				}
 			}
 		}
 	})
 }
 
-func (c *MQTTClient) PublishResult(cmd domain_commands.ICommand, Success bool, Message string, Data interface{}) error {
-	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", cmd.GetCorrelationId(), Success, Message))
+func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {
+	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", CorrelationId, Success, Message))
 	payload, err := json.MarshalIndent(dto.ResultDto{
-		CorrelationId: cmd.GetCorrelationId(),
+		CorrelationId: CorrelationId,
 		Success:       Success,
 		Data:          Data,
 		Message:       Message,

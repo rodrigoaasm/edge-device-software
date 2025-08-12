@@ -15,7 +15,7 @@ type Device struct {
 
 func NewDevice(deviceId string, url string) (*Device, error) {
 	// ipRegex := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
-	hexRegex := regexp.MustCompile(`^[A-Fa-f0-9]{6}$`)
+	hexRegex := regexp.MustCompile(`^[A-Fa-f0-9]{4}$`)
 
 	// if !ipRegex.MatchString(ip) {
 	// 	return nil, errors.New("invalid IP address")
