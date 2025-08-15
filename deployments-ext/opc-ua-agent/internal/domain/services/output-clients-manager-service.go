@@ -18,6 +18,10 @@ func NewOutputClientsManagerService(log logr.Logger) *OutputClientsManagerServic
 	}
 }
 
+func (ms *OutputClientsManagerService) GetClient(deviceId string) domain_interfaces.IOutputDriver {
+	return ms.clients[deviceId]
+}
+
 func (ms *OutputClientsManagerService) AddClient(client domain_interfaces.IOutputDriver) {
 	ms.clients[client.GetClientId()] = client
 	ms.log.Info("Client added in output clients manager")

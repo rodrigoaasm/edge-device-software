@@ -3,6 +3,7 @@ package opcua
 import (
 	"context"
 	"flag"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gopcua/opcua"
@@ -174,8 +175,8 @@ func (c *OPCUAClient) Disconnect() error {
 	return c.client.Close(context.Background())
 }
 
-func (c *OPCUAClient) Publish(topic string, message string) error {
-	c.log.Info("Publishing message: " + message + " to topic: " + topic)
+func (c *OPCUAClient) Publish(topic string, data interface{}) error {
+	c.log.Info("Write OPC. Data: " + fmt.Sprintf("%v", data) + " key: " + topic)
 	return nil
 }
 

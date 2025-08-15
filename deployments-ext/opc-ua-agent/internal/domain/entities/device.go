@@ -7,10 +7,10 @@ import (
 )
 
 type Device struct {
-	DeviceId  string    `json:"deviceId"`
-	Url       string    `json:"url"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	DeviceId  string
+	Url       string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func NewDevice(deviceId string, url string) (*Device, error) {

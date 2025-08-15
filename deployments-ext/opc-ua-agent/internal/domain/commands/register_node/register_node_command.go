@@ -40,7 +40,7 @@ func (c *RegisterNodeCommand) GetCorrelationId() string {
 }
 
 func (c *RegisterNodeCommand) Execute() (interface{}, error) {
-	c.log.Info("Registering node in database..")
+	c.log.Info("Registering " + c.device.DeviceId + "(" + c.device.Url + ") node in database..")
 	transManager, err := c.deviceRepository.Create(c.device)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,8 @@ func (c *RegisterNodeCommand) Execute() (interface{}, error) {
 	c.log.Info("Connecting to opcua server..")
 	opcDriver := c.outputDriverFactory.Make(c.device)
 	if err = opcDriver.Connect(); err != nil {
-		c.log.Error(err, "Connection failed to opcua server.")
+		transManager.Rollback()
+		c.log.Error(err, "Connection failed to opcua server. Rollback")
 		return nil, err
 	}
 	c.outputClientsManagerService.AddClient(opcDriver)

@@ -6,7 +6,7 @@ type IOutputDriver interface {
 	Connect() error
 	Disconnect() error
 	GetClientId() string
-	Publish(topic string, message string) error
+	Publish(topic string, message interface{}) error
 }
 
 type IOutputDriverFactory interface {

@@ -11,7 +11,13 @@ import (
 	"opc.ua.agent/config"
 	domain_commands "opc.ua.agent/internal/domain/commands"
 	"opc.ua.agent/internal/domain/dto"
+	"opc.ua.agent/internal/utils"
 )
+
+type CommandError struct {
+	Error         error
+	CorrelationId string
+}
 
 type MQTTClient struct {
 	mqttClient     mqtt.Client
@@ -40,6 +46,84 @@ func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *confi
 	}
 }
 
+func (c *MQTTClient) makeCmdError(correlationId string, message string) *CommandError {
+	return &CommandError{
+		Error:         utils.EmitError(c.log, message),
+		CorrelationId: correlationId,
+	}
+}
+
+func (c *MQTTClient) parseMessageToCommands(messageDTO map[string]interface{}) ([]domain_commands.ICommand, *CommandError) {
+	commands := make([]domain_commands.ICommand, 0)
+	if messageDTO["deviceId"] == c.config.DeviceId {
+		if messageDTO["commands"] == nil {
+			return nil, c.makeCmdError(messageDTO["correlationId"].(string), "The message not have commands. Ignore.")
+		}
+
+		for _, commandG := range messageDTO["commands"].([]interface{}) {
+			commandDTO := commandG.(map[string]interface{})
+			correlationId := commandDTO["correlationId"].(string)
+			c.log.Info("Command (" + correlationId + ") is for me..")
+			if correlationId == "" {
+				c.log.Error(nil, "The command not have a correlation id. Ignore.")
+				continue
+			}
+
+			if command, err := c.commandFactory.Make(commandDTO); err == nil {
+				commands = append(commands, command)
+			} else {
+				return nil, c.makeCmdError(correlationId, "Command invalid. "+err.Error())
+			}
+		}
+	} else {
+		c.log.Info("Actuate will be passed on..")
+		timestampf, ok := messageDTO["timestamp"].(float64)
+		if !ok {
+			return nil, c.makeCmdError(fmt.Sprintf("%d", timestampf), "The message not have a timestamp or it is not a epoch. Ignore.")
+		}
+
+		if messageDTO["deviceId"] == nil {
+			return nil, c.makeCmdError(fmt.Sprintf("%d", timestampf), "The message not have a device id. Ignore.")
+		}
+
+		if command, err := c.commandFactory.MakeActuateCmd(
+			int64(timestampf),
+			messageDTO["deviceId"].(string),
+			messageDTO,
+		); err == nil {
+			commands = append(commands, command)
+		} else {
+			return nil, c.makeCmdError(fmt.Sprintf("%d", timestampf), "Actuate invalid. "+err.Error())
+		}
+	}
+
+	return commands, nil
+}
+
+func (c *MQTTClient) handlerMessage(q mqtt.Client, m mqtt.Message) {
+	var messageDTO map[string]interface{}
+	if err := json.Unmarshal(m.Payload(), &messageDTO); err != nil {
+		c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
+		return
+	}
+
+	commands, err := c.parseMessageToCommands(messageDTO)
+	if err != nil {
+		c.PublishResult(err.CorrelationId, false, err.Error.Error(), nil)
+		return
+	}
+
+	for _, command := range commands {
+		data, cerr := command.Execute()
+		if cerr != nil {
+			c.PublishResult(command.GetCorrelationId(), false, "Failed to execute command."+cerr.Error(), data)
+			continue
+		}
+
+		c.PublishResult(command.GetCorrelationId(), true, "", data)
+	}
+}
+
 func (c *MQTTClient) Connect() {
 	c.log.Info("Connecting MQTT client...")
 	if token := c.mqttClient.Connect(); token.Wait() && token.Error() != nil {
@@ -48,36 +132,7 @@ func (c *MQTTClient) Connect() {
 	}
 
 	c.log.Info("Subscribing MQTT client...")
-	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, func(q mqtt.Client, m mqtt.Message) {
-		var messageDTO dto.MessageDTO
-		if err := json.Unmarshal(m.Payload(), &messageDTO); err != nil {
-			c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
-			return
-		}
-
-		if messageDTO.DeviceId == c.config.DeviceId {
-			for _, commandDTO := range messageDTO.Commands {
-				c.log.Info("Command (" + commandDTO.CorrelationId + ") is for me..")
-				if commandDTO.CorrelationId == "" {
-					c.log.Error(nil, "The command not have a correlation id. Ignore.")
-					continue
-				}
-
-				command, err := c.commandFactory.Make(commandDTO)
-				if err == nil {
-					data, cerr := command.Execute()
-					if cerr != nil {
-						c.PublishResult(commandDTO.CorrelationId, false, "Failed to execute command."+cerr.Error(), data)
-						continue
-					}
-
-					c.PublishResult(commandDTO.CorrelationId, true, "", data)
-				} else {
-					c.PublishResult(commandDTO.CorrelationId, false, "Command invalid. "+err.Error(), nil)
-				}
-			}
-		}
-	})
+	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, c.handlerMessage)
 }
 
 func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {

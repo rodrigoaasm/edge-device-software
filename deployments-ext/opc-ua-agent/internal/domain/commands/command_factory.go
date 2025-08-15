@@ -3,15 +3,17 @@ package domain_commands
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
+	actuate_opc "opc.ua.agent/internal/domain/commands/actuate"
 	list_nodes "opc.ua.agent/internal/domain/commands/list_nodes"
 	register_node "opc.ua.agent/internal/domain/commands/register_node"
 	remove_node "opc.ua.agent/internal/domain/commands/remove_node"
-	"opc.ua.agent/internal/domain/dto"
 	"opc.ua.agent/internal/domain/entities"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
 	"opc.ua.agent/internal/domain/services"
+	"opc.ua.agent/internal/utils"
 )
 
 type CommandFactory struct {
@@ -35,44 +37,76 @@ func NewCommandFactory(
 	}
 }
 
-func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
+func (c *CommandFactory) _mapper(command map[string]interface{}) (ICommand, error) {
 	log := logr.FromContextOrDiscard(c.ctx)
 
-	if command.Command == "register_opc" {
-		device, err := entities.NewDevice(command.Args.NodeId, command.Args.Url)
+	fmt.Printf("Command: %v\n", command)
+
+	commandField, ok := command["command"].(string)
+	if !ok {
+		return nil, utils.EmitError(log, "The command is null.")
+	}
+
+	correlationId, ok := command["correlationId"].(string)
+	if !ok {
+		return nil, utils.EmitError(log, "The command not have correlation id.")
+	}
+
+	if command["args"] == nil {
+		return nil, utils.EmitError(log, "The command not have args.")
+	}
+
+	if commandField == "register_opc" {
+		device, err := entities.NewDevice(
+			command["args"].(map[string]interface{})["nodeId"].(string),
+			command["args"].(map[string]interface{})["url"].(string),
+		)
 		if err != nil {
 			return nil, err
 		}
 		return register_node.New(
-			command.CorrelationId,
-			*device, log,
+			correlationId,
+			*device,
+			log,
 			c.outputDriverFactory,
 			c.deviceRepository,
 			c.outputClientsManagerService,
 		), nil
 	}
 
-	if command.Command == "list_opc" {
-		return list_nodes.New(command.CorrelationId, log, c.deviceRepository), nil
+	if commandField == "list_opc" {
+		return list_nodes.New(correlationId, log, c.deviceRepository, c.outputClientsManagerService), nil
 	}
 
-	if command.Command == "remove_opc" {
+	if commandField == "remove_opc" {
 		return remove_node.New(
-			command.CorrelationId,
-			command.Args.NodeId,
+			correlationId,
+			command["args"].(map[string]interface{})["nodeId"].(string),
 			log,
 			c.deviceRepository,
 			c.outputClientsManagerService,
 		), nil
 	}
 
-	return nil, errors.New("Unknown command: " + command.Command)
+	return nil, errors.New("Unknown command: " + commandField)
 }
 
-func (c *CommandFactory) Make(commandDTO dto.CommandDTO) (ICommand, error) {
+func (c *CommandFactory) Make(commandDTO map[string]interface{}) (ICommand, error) {
 	command, err := c._mapper(commandDTO)
 	if err != nil {
 		return nil, err
 	}
 	return command, nil
+}
+
+func (c *CommandFactory) MakeActuateCmd(timestamp int64, deviceId string, data map[string]interface{}) (ICommand, error) {
+	log := logr.FromContextOrDiscard(c.ctx)
+
+	return actuate_opc.New(
+		timestamp,
+		data,
+		deviceId,
+		log,
+		c.outputClientsManagerService,
+	), nil
 }
