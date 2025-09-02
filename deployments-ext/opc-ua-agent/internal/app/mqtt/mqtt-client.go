@@ -63,14 +63,15 @@ func (c *MQTTClient) parseMessageToCommands(messageDTO map[string]interface{}) (
 			return nil, c.makeCmdError(messageDTO["correlationId"].(string), "The message not have commands. Ignore.")
 		}
 
-		for _, commandG := range messageDTO["commands"].([]interface{}) {
+		for ind, commandG := range messageDTO["commands"].([]interface{}) {
 			commandDTO := commandG.(map[string]interface{})
-			correlationId := commandDTO["correlationId"].(string)
+			correlationId := messageDTO["correlationId"].(string)
 			c.log.Info("Command (" + correlationId + ") is for me..")
 			if correlationId == "" {
 				c.log.Error(nil, "The command not have a correlation id. Ignore.")
 				continue
 			}
+			commandDTO["correlationId"] = fmt.Sprintf("%s/index-%d", correlationId, ind)
 
 			if command, err := c.commandFactory.Make(commandDTO); err == nil {
 				commands = append(commands, command)
@@ -109,6 +110,7 @@ func (c *MQTTClient) handlerMessage(q mqtt.Client, m mqtt.Message) {
 		c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
 		return
 	}
+	c.PublishAck(messageDTO["correlationId"].(string))
 
 	commands, err := c.parseMessageToCommands(messageDTO)
 	if err != nil {
@@ -122,7 +124,6 @@ func (c *MQTTClient) handlerMessage(q mqtt.Client, m mqtt.Message) {
 			c.PublishResult(command.GetCorrelationId(), false, "Failed to execute command."+cerr.Error(), data)
 			continue
 		}
-
 		c.PublishResult(command.GetCorrelationId(), true, "", data)
 	}
 }
@@ -139,6 +140,29 @@ func (c *MQTTClient) Connect() error {
 	return nil
 }
 
+func (c *MQTTClient) publish(topic string, payload []byte) error {
+	if token := c.mqttClient.Publish(topic, 0, false, payload); token.Wait() && token.Error() != nil {
+		c.log.Error(token.Error(), "Failed to publish result in topic"+topic)
+		return nil
+	}
+	c.log.Info("Message to " + topic + " published")
+	return nil
+}
+
+func (c *MQTTClient) PublishAck(CorrelationId string) error {
+	c.log.Info(fmt.Sprintf("Publishing ack: CorrelationId=%s", CorrelationId))
+	payload, err := json.MarshalIndent(dto.AckDto{
+		CorrelationId: CorrelationId,
+		Timestamp:     time.Now().Unix(),
+		Ack:           true,
+	}, "", "  ")
+	if err != nil {
+		c.log.Error(err, "Failed to marshal ack message")
+		return nil
+	}
+	return c.publish(c.config.ResultsTopic, payload)
+}
+
 func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {
 	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", CorrelationId, Success, Message))
 	payload, err := json.MarshalIndent(dto.ResultDto{
@@ -146,33 +170,24 @@ func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message s
 		Success:       Success,
 		Data:          Data,
 		Message:       Message,
+		Timestamp:     time.Now().Unix(),
 	},
 		"", "  ")
 	if err != nil {
 		c.log.Error(err, "Failed to marshal result")
 		return nil
 	}
-	if token := c.mqttClient.Publish(c.config.ResultsTopic, 0, false, payload); token.Wait() && token.Error() != nil {
-		c.log.Error(token.Error(), "Failed to publish result")
-		return nil
-	}
-	c.log.Info("Result published")
-	return nil
+	return c.publish(c.config.ResultsTopic, payload)
 }
 
 func (c *MQTTClient) PublishData(deviceId string, message interface{}) error {
 	c.log.Info("Publishing data in " + deviceId)
 	payload, err := json.MarshalIndent(message, "", "  ")
 	if err != nil {
-		c.log.Error(err, "Failed to marshal result")
+		c.log.Error(err, "Failed to marshal data message for device "+deviceId)
 		return nil
 	}
-	if token := c.mqttClient.Publish(c.config.DataTopic+"/"+deviceId, 0, false, payload); token.Wait() && token.Error() != nil {
-		c.log.Error(token.Error(), "Failed to publish result")
-		return nil
-	}
-	c.log.Info("Data published in " + deviceId)
-	return nil
+	return c.publish(c.config.DataTopic+"/"+deviceId, payload)
 }
 
 func (c *MQTTClient) Disconnect() error {

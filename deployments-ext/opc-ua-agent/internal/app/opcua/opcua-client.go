@@ -111,6 +111,8 @@ func (c *OPCUAClient) GetClientId() string {
 
 func (c *OPCUAClient) onData() {
 	for t := range c.ticker.C {
+		var payload map[string]interface{} = make(map[string]interface{})
+		payload["timestamp"] = time.Now().Unix()
 		c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
 		nodeID := ua.NewStringNodeID(OPC_NS, OPC_PATH)
 
@@ -133,8 +135,6 @@ func (c *OPCUAClient) onData() {
 		}
 
 		c.log.Info(fmt.Sprintf("Found %d nodes", len(browseResp.Results)))
-		var payload map[string]interface{} = make(map[string]interface{})
-		payload["timestamp"] = time.Now().Unix()
 		for _, result := range browseResp.Results {
 			c.log.Info(fmt.Sprintf("Found %d references", len(result.References)))
 			for _, ref := range result.References {
