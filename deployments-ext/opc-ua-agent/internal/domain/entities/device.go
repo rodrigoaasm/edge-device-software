@@ -7,15 +7,16 @@ import (
 )
 
 type Device struct {
-	DeviceId  string
-	Url       string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	DeviceId        string
+	Url             string
+	IntervalSeconds int
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
-func NewDevice(deviceId string, url string) (*Device, error) {
+func NewDevice(deviceId string, url string, intervalSeconds int) (*Device, error) {
 	// ipRegex := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
-	hexRegex := regexp.MustCompile(`^[A-Fa-f0-9]{4}$`)
+	hexRegex := regexp.MustCompile(`^[A-Fa-f0-9]{4,6}$`)
 
 	// if !ipRegex.MatchString(ip) {
 	// 	return nil, errors.New("invalid IP address")
@@ -25,9 +26,10 @@ func NewDevice(deviceId string, url string) (*Device, error) {
 	}
 
 	return &Device{
-		DeviceId:  deviceId,
-		Url:       url,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		DeviceId:        deviceId,
+		Url:             url,
+		IntervalSeconds: intervalSeconds,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}, nil
 }

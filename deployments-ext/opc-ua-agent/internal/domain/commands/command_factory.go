@@ -60,6 +60,7 @@ func (c *CommandFactory) _mapper(command map[string]interface{}) (ICommand, erro
 		device, err := entities.NewDevice(
 			command["args"].(map[string]interface{})["nodeId"].(string),
 			command["args"].(map[string]interface{})["url"].(string),
+			int(command["args"].(map[string]interface{})["intervalSeconds"].(float64)),
 		)
 		if err != nil {
 			return nil, err

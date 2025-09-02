@@ -24,7 +24,8 @@ type MQTTClient struct {
 	log            logr.Logger
 	commandFactory *domain_commands.CommandFactory
 
-	config *config.ContainerConfig
+	config   *config.ContainerConfig
+	clientId string
 }
 
 func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *config.ContainerConfig, log logr.Logger) *MQTTClient {
@@ -33,7 +34,8 @@ func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *confi
 
 	log.Info("Generating client id...")
 	rand.Seed(time.Now().UnixNano())
-	opts.SetClientID(fmt.Sprintf("opc-ua-agent-%d", rand.Intn(10000)))
+	clientId := fmt.Sprintf("opc-ua-agent-%d", rand.Intn(10000))
+	opts.SetClientID(clientId)
 	log.Info("Client id generated and sotted")
 
 	mqttClient := mqtt.NewClient(opts)
@@ -43,6 +45,7 @@ func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *confi
 		log:            log,
 		commandFactory: commandFactory,
 		config:         config,
+		clientId:       clientId,
 	}
 }
 
@@ -124,7 +127,7 @@ func (c *MQTTClient) handlerMessage(q mqtt.Client, m mqtt.Message) {
 	}
 }
 
-func (c *MQTTClient) Connect() {
+func (c *MQTTClient) Connect() error {
 	c.log.Info("Connecting MQTT client...")
 	if token := c.mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		c.log.Error(token.Error(), "Failed to connect MQTT client")
@@ -133,6 +136,7 @@ func (c *MQTTClient) Connect() {
 
 	c.log.Info("Subscribing MQTT client...")
 	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, c.handlerMessage)
+	return nil
 }
 
 func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {
@@ -156,8 +160,28 @@ func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message s
 	return nil
 }
 
-func (c *MQTTClient) Disconnect() {
+func (c *MQTTClient) PublishData(deviceId string, message interface{}) error {
+	c.log.Info("Publishing data in " + deviceId)
+	payload, err := json.MarshalIndent(message, "", "  ")
+	if err != nil {
+		c.log.Error(err, "Failed to marshal result")
+		return nil
+	}
+	if token := c.mqttClient.Publish(c.config.DataTopic+"/"+deviceId, 0, false, payload); token.Wait() && token.Error() != nil {
+		c.log.Error(token.Error(), "Failed to publish result")
+		return nil
+	}
+	c.log.Info("Data published in " + deviceId)
+	return nil
+}
+
+func (c *MQTTClient) Disconnect() error {
 	c.log.Info("Disconnecting MQTT client...")
 	c.mqttClient.Disconnect(250)
 	c.log.Info("MQTT client disconnected")
+	return nil
+}
+
+func (c *MQTTClient) GetClientId() string {
+	return c.clientId
 }

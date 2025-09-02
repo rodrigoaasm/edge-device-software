@@ -7,7 +7,8 @@ import (
 )
 
 type OPCUAClientFactory struct {
-	log logr.Logger
+	log          logr.Logger
+	OutputDriver domain_interfaces.IOutputDriver
 }
 
 func NewOPCUAClientFactory(log logr.Logger) *OPCUAClientFactory {
@@ -17,5 +18,5 @@ func NewOPCUAClientFactory(log logr.Logger) *OPCUAClientFactory {
 }
 
 func (c *OPCUAClientFactory) Make(device entities.Device) domain_interfaces.IOutputDriver {
-	return NewOPCUAClient(device, c.log)
+	return NewOPCUAClient(device, c.log, c.OutputDriver)
 }

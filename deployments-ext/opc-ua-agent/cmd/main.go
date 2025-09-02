@@ -47,10 +47,10 @@ func main() {
 	outputClientsManagerService := services.NewOutputClientsManagerService(log)
 
 	// factory
-	outputDriverFactory := app_opcua.NewOPCUAClientFactory(log)
+	opcDriverFactory := app_opcua.NewOPCUAClientFactory(log)
 	commandFactory := domain_commands.NewCommandFactory(
 		ctx,
-		outputDriverFactory,
+		opcDriverFactory,
 		deviceRepository,
 		outputClientsManagerService,
 	)
@@ -59,6 +59,7 @@ func main() {
 	mqttClient := app_mqtt.NewMQTTClient(commandFactory, containerConfig, log)
 	mqttClient.Connect()
 	defer mqttClient.Disconnect()
+	opcDriverFactory.OutputDriver = mqttClient
 
 	<-signalChan
 	log.Info("Shutting down...")

@@ -40,13 +40,16 @@ func (c *ActuateCommand) Execute() (interface{}, error) {
 	c.log.Info("Verify if actuate belongs to a opc-device...")
 	if client := c.clientMngService.GetClient(c.deviceId); client != nil {
 		c.log.Info("Actuate belongs to a opc-device. Sending actuate to opcua server..")
+		delete(c.data, "deviceId")
+		delete(c.data, "timestamp")
 		for key, value := range c.data {
-			if err := client.Publish(key, value); err != nil {
+			if err := client.PublishData(key, value); err != nil {
 				c.log.Info("Unable to send actuate to opcua server.")
 				return nil, err
 			}
 		}
 		c.log.Info("Actuate to opcua server sent.")
+		return nil, nil
 	}
 
 	c.log.Info("Actuate not belongs to a opc-device. Ignore")
