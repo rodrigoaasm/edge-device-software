@@ -91,6 +91,7 @@ func (c *MQTTClient) PublishResult(cmd domain_commands.ICommand, Success bool, M
 		Success:       Success,
 		Data:          Data,
 		Message:       Message,
+		Timestamp:     time.Now().Unix(),
 	},
 		"", "  ")
 	if err != nil {

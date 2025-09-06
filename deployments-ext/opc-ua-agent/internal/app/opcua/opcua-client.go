@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -109,6 +110,45 @@ func (c *OPCUAClient) GetClientId() string {
 	return c.Device.DeviceId
 }
 
+func (c *OPCUAClient) getNodeList(nodeId *ua.NodeID) (*ua.BrowseResponse, error) {
+	browseReq := &ua.BrowseRequest{
+		View: &ua.ViewDescription{},
+		NodesToBrowse: []*ua.BrowseDescription{
+			{
+				NodeID:          nodeId,
+				BrowseDirection: ua.BrowseDirectionForward,
+				IncludeSubtypes: true,
+				NodeClassMask:   uint32(ua.NodeClassAll),
+				ResultMask:      uint32(ua.BrowseResultMaskAll),
+			},
+		},
+	}
+
+	return c.client.Browse(context.Background(), browseReq)
+}
+
+func (c *OPCUAClient) getNodeValue(nodeId *ua.NodeID) (interface{}, error) {
+	req := &ua.ReadRequest{
+		NodesToRead: []*ua.ReadValueID{
+			{
+				NodeID:      nodeId,
+				AttributeID: ua.AttributeIDValue,
+			},
+		},
+	}
+
+	resp, err := c.client.Read(context.Background(), req)
+	if err != nil {
+		return nil, utils.EmitError(c.log, "Value not read "+"from "+nodeId.String())
+	} else {
+		if len(resp.Results) > 0 && resp.Results[0].Status == ua.StatusOK {
+			return resp.Results[0].Value.Value(), nil
+		} else {
+			return nil, utils.EmitError(c.log, "Value not read "+"from "+nodeId.String())
+		}
+	}
+}
+
 func (c *OPCUAClient) onData() {
 	for t := range c.ticker.C {
 		var payload map[string]interface{} = make(map[string]interface{})
@@ -116,20 +156,8 @@ func (c *OPCUAClient) onData() {
 		c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
 		nodeID := ua.NewStringNodeID(OPC_NS, OPC_PATH)
 
-		browseReq := &ua.BrowseRequest{
-			View: &ua.ViewDescription{},
-			NodesToBrowse: []*ua.BrowseDescription{
-				{
-					NodeID:          nodeID,
-					BrowseDirection: ua.BrowseDirectionForward,
-					IncludeSubtypes: true,
-					NodeClassMask:   uint32(ua.NodeClassAll),
-					ResultMask:      uint32(ua.BrowseResultMaskAll),
-				},
-			},
-		}
-
-		browseResp, err := c.client.Browse(context.Background(), browseReq)
+		c.log.Info(fmt.Sprintf("Getting all vars in NodeID=%s...", nodeID.String()))
+		browseResp, err := c.getNodeList(nodeID)
 		if err != nil {
 			c.log.Error(err, "Erro no Browse:")
 		}
@@ -138,32 +166,26 @@ func (c *OPCUAClient) onData() {
 		for _, result := range browseResp.Results {
 			c.log.Info(fmt.Sprintf("Found %d references", len(result.References)))
 			for _, ref := range result.References {
-				c.log.Info(fmt.Sprintf("Getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n",
-					ref.NodeID.String(),
-					ref.BrowseName,
-					ref.DisplayName.Text,
-				))
-				req := &ua.ReadRequest{
-					NodesToRead: []*ua.ReadValueID{
-						{
-							NodeID:      ref.NodeID.NodeID,
-							AttributeID: ua.AttributeIDValue,
-						},
-					},
-				}
-				resp, err := c.client.Read(context.Background(), req)
-				if err != nil {
-					c.log.Error(err, "Erro no Read:")
-				} else {
-					if len(resp.Results) > 0 && resp.Results[0].Status == ua.StatusOK {
-						payload[ref.DisplayName.Text] = resp.Results[0].Value.Value()
+				if strings.HasPrefix(ref.DisplayName.Text, c.Device.DeviceId) {
+					c.log.Info(fmt.Sprintf("Getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n",
+						ref.NodeID.String(),
+						ref.BrowseName.Name,
+						ref.DisplayName.Text,
+					))
+					if value, err := c.getNodeValue(ref.NodeID.NodeID); err == nil {
+						attrKey := strings.TrimPrefix(ref.DisplayName.Text, c.Device.DeviceId+"_")
+						payload[attrKey] = value
 					} else {
-						c.log.Error(err, "Value not read "+"from "+ref.NodeID.String())
+						c.log.Error(err, "Unable to getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n")
 					}
 				}
 			}
 		}
 
-		c.output.PublishData(c.Device.DeviceId, payload)
+		c.log.Info("Publishing data in mqtt broker...")
+		if err := c.output.PublishData(c.Device.DeviceId, payload); err != nil {
+			c.log.Error(err, "Failed to publish data in mqtt broker")
+		}
+		c.log.Info("Data published in mqtt broker")
 	}
 }

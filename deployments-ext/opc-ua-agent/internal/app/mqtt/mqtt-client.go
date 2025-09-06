@@ -59,6 +59,7 @@ func (c *MQTTClient) makeCmdError(correlationId string, message string) *Command
 func (c *MQTTClient) parseMessageToCommands(messageDTO map[string]interface{}) ([]domain_commands.ICommand, *CommandError) {
 	commands := make([]domain_commands.ICommand, 0)
 	if messageDTO["deviceId"] == c.config.DeviceId {
+		c.PublishAck(messageDTO["correlationId"].(string))
 		if messageDTO["commands"] == nil {
 			return nil, c.makeCmdError(messageDTO["correlationId"].(string), "The message not have commands. Ignore.")
 		}
@@ -110,7 +111,6 @@ func (c *MQTTClient) handlerMessage(q mqtt.Client, m mqtt.Message) {
 		c.log.Error(nil, "Failed to Unmarshal message. "+err.Error(), nil)
 		return
 	}
-	c.PublishAck(messageDTO["correlationId"].(string))
 
 	commands, err := c.parseMessageToCommands(messageDTO)
 	if err != nil {
@@ -164,13 +164,14 @@ func (c *MQTTClient) PublishAck(CorrelationId string) error {
 }
 
 func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {
+	timestamp := time.Now().Unix()
 	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", CorrelationId, Success, Message))
 	payload, err := json.MarshalIndent(dto.ResultDto{
 		CorrelationId: CorrelationId,
 		Success:       Success,
 		Data:          Data,
 		Message:       Message,
-		Timestamp:     time.Now().Unix(),
+		Timestamp:     timestamp,
 	},
 		"", "  ")
 	if err != nil {
@@ -182,6 +183,7 @@ func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message s
 
 func (c *MQTTClient) PublishData(deviceId string, message interface{}) error {
 	c.log.Info("Publishing data in " + deviceId)
+	message.(map[string]interface{})["deviceId"] = deviceId
 	payload, err := json.MarshalIndent(message, "", "  ")
 	if err != nil {
 		c.log.Error(err, "Failed to marshal data message for device "+deviceId)
