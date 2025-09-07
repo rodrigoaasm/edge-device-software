@@ -5,8 +5,8 @@ resources:
 # - volumes-default/influxdb_pv.yaml
 - deployments-default/nanomq/deployment.yaml
 - deployments-default/influxdb/deployment.yaml
-# - deployments-default/telegraf-agg/deployment.yaml
-# - deployments-default/telegraf-bridge/deployment.yaml
+- deployments-default/telegraf-agg/deployment.yaml
+- deployments-default/telegraf-bridge/deployment.yaml
 - ed-operator/deployment.yaml
 - nodeport-default/nodeports.yaml
 
@@ -25,7 +25,7 @@ images:
 
 - name: telegraf-bridge
   newName: rodrigoasmaia/telegraf-bridge
-  newTag: 0.3.0
+  newTag: 0.4.0
 
 - name: ed-operator
   newName: rodrigoasmaia/ed-operator
