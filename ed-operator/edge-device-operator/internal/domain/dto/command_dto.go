@@ -21,6 +21,7 @@ type CommandDTO struct {
 }
 
 type MessageDTO struct {
-	DeviceId string       `json:"deviceId"`
-	Commands []CommandDTO `json:"commands"`
+	DeviceId      string       `json:"deviceId"`
+	CorrelationId string       `json:"correlationId"`
+	Commands      []CommandDTO `json:"commands"`
 }

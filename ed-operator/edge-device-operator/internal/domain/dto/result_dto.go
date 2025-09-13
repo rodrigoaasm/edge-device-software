@@ -1,6 +1,7 @@
 package dto
 
 type ResultDto struct {
+	DeviceId      string      `json:"deviceId"`
 	CorrelationId string      `json:"correlationId"`
 	Success       bool        `json:"success"`
 	Data          interface{} `json:"data"`
@@ -9,6 +10,8 @@ type ResultDto struct {
 }
 
 type AckDto struct {
+	DeviceId      string `json:"deviceId"`
 	CorrelationId string `json:"correlationId"`
 	Timestamp     int64  `json:"timestamp"`
+	Ack           bool   `json:"ack"`
 }

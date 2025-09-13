@@ -29,4 +29,4 @@ images:
 
 - name: ed-operator
   newName: rodrigoasmaia/ed-operator
-  newTag: 0.3.0
+  newTag: 0.4.1

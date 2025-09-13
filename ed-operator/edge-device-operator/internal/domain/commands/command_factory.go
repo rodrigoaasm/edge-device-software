@@ -3,6 +3,7 @@ package domain_commands
 import (
 	"context"
 	"ed-operator/internal/domain/commands/deploy"
+	"ed-operator/internal/domain/commands/healthcheck"
 	"ed-operator/internal/domain/commands/undeploy"
 	"ed-operator/internal/domain/commands/update_deploy"
 	"ed-operator/internal/domain/dto"
@@ -48,6 +49,11 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 			return update_deploy.NewUpdateDeployCommand(
 				command.CorrelationId,
 				microservice,
+			), nil
+		}
+		if command.Command == "healthcheck" {
+			return healthcheck.NewHealthCheckCommand(
+				command.CorrelationId,
 			), nil
 		}
 	}
