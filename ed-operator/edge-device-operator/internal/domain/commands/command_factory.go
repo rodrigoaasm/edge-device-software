@@ -4,6 +4,7 @@ import (
 	"context"
 	"ed-operator/internal/domain/commands/deploy"
 	"ed-operator/internal/domain/commands/healthcheck"
+	"ed-operator/internal/domain/commands/list_deploy"
 	"ed-operator/internal/domain/commands/undeploy"
 	"ed-operator/internal/domain/commands/update_deploy"
 	"ed-operator/internal/domain/dto"
@@ -22,10 +23,9 @@ func NewCommandFactory(ctx context.Context, drc interfaces.IReconcilerClient) *C
 }
 
 func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
-	if command.Command == "undeploy" {
-		return undeploy.NewUndeployCommand(command.CorrelationId, command.Args.Name), nil
-	} else {
-		microservice := entities.NewMicroservice(
+	var microservice *entities.Microservice
+	if command.Command == "deploy" || command.Command == "update" {
+		microservice = entities.NewMicroservice(
 			command.Args.Name,
 			command.Args.Image,
 			command.Args.Env,
@@ -38,24 +38,32 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 			command.Args.RequestCPU,
 			command.Args.LimitCPU,
 		)
+	}
 
-		if command.Command == "deploy" {
-			return deploy.NewDeployCommand(
-				command.CorrelationId,
-				microservice,
-			), nil
-		}
-		if command.Command == "update" {
-			return update_deploy.NewUpdateDeployCommand(
-				command.CorrelationId,
-				microservice,
-			), nil
-		}
-		if command.Command == "healthcheck" {
-			return healthcheck.NewHealthCheckCommand(
-				command.CorrelationId,
-			), nil
-		}
+	if command.Command == "deploy" {
+		return deploy.NewDeployCommand(
+			command.CorrelationId,
+			microservice,
+		), nil
+	}
+	if command.Command == "update" {
+		return update_deploy.NewUpdateDeployCommand(
+			command.CorrelationId,
+			microservice,
+		), nil
+	}
+	if command.Command == "healthcheck" {
+		return healthcheck.NewHealthCheckCommand(
+			command.CorrelationId,
+		), nil
+	}
+	if command.Command == "list_deploy" {
+		return list_deploy.NewListDeployCommand(
+			command.CorrelationId,
+		), nil
+	}
+	if command.Command == "undeploy" {
+		return undeploy.NewUndeployCommand(command.CorrelationId, command.Args.Name), nil
 	}
 
 	return nil, errors.New("Unknown command: " + command.Command)

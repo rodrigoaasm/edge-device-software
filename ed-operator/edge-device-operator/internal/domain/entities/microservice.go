@@ -44,3 +44,9 @@ func NewMicroservice(
 		LimitCPU:        utils.GetValueOrDefault(limitCPU, 500),
 	}
 }
+
+type MicroserviceSimpleStatus struct {
+	Name    string `json:"name"`
+	Image   string `json:"image"`
+	Healthy bool   `json:"healthy"`
+}

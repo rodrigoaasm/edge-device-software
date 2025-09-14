@@ -3,6 +3,7 @@ package healthcheck
 import (
 	"context"
 	"ed-operator/internal/domain/interfaces"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,10 +39,12 @@ func (h *HealthCheckCommand) Execute() (interface{}, error) {
 	log := log.FromContext(h.ctx)
 	log.Info("Searching ed-operator deployment...")
 	var actualDeployment appsv1.Deployment
-	h.reconcilerClient.Get(h.ctx, types.NamespacedName{
+	if err := h.reconcilerClient.Get(h.ctx, types.NamespacedName{
 		Name:      "operator",
 		Namespace: "ed-system",
-	}, &actualDeployment)
+	}, &actualDeployment); err != nil {
+		return nil, fmt.Errorf("unable to get ed-operator deployment: %v", err)
+	}
 
 	return actualDeployment.Spec.Template.Spec.Containers[0].Image, nil
 }
