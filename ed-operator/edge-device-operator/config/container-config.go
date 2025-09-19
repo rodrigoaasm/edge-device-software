@@ -5,6 +5,7 @@ import "os"
 type ContainerConfig struct {
 	ConsumerTopic string
 	ResultsTopic  string
+	CloudTopic    string
 	BrokerUrl     string
 	DeviceId      string
 	LogLevel      string
@@ -28,6 +29,7 @@ func NewContainerConfig() *ContainerConfig {
 	con := ContainerConfig{}
 	con.ConsumerTopic = getEnvOrDefault("CONSUMER_TOPIC", "device/config")
 	con.ResultsTopic = getEnvOrDefault("RESULTS_TOPIC", "device/results")
+	con.CloudTopic = getEnvOrDefault("CLOUD_TOPIC", "cloud/cmd")
 	con.DeviceId = getEnv("DEVICE_ID")
 	con.LogLevel = getEnvOrDefault("LOG_LEVEL", "info")
 	con.BrokerUrl = getEnvOrDefault("BROKER_URL", "tcp://nanomq:1883")

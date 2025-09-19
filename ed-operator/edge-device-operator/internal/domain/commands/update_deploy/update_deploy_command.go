@@ -2,8 +2,10 @@ package update_deploy
 
 import (
 	"context"
+	command_commons "ed-operator/internal/domain/commands/commons"
 	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
+	"errors"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corekubev1 "k8s.io/api/core/v1"
@@ -64,6 +66,25 @@ func (d *UpdateDeployCommand) Execute() (interface{}, error) {
 	log.Info("Updating " + d.Microservice.Name + " deployment...")
 	if d.Microservice.Image != "" {
 		actualDeployment.Spec.Template.Spec.Containers[0].Image = d.Microservice.Image
+	}
+
+	if d.Microservice.Env != nil {
+		envVars := command_commons.EnvMapToEnvVar(d.Microservice.Env)
+		var deviceIDEnv string
+		if d.Microservice.Name == "operator" {
+			for _, item := range actualDeployment.Spec.Template.Spec.Containers[0].Env {
+				if item.Name == "DEVICE_ID" {
+					deviceIDEnv = item.Value
+					break
+				}
+			}
+			if deviceIDEnv == "" {
+				return nil, errors.New("device id not found in operator deployment")
+			}
+
+			envVars = append(envVars, corekubev1.EnvVar{Name: "DEVICE_ID", Value: deviceIDEnv})
+		}
+		actualDeployment.Spec.Template.Spec.Containers[0].Env = envVars
 	}
 
 	if d.Microservice.Name == "operator" {

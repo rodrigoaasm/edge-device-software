@@ -40,6 +40,7 @@ A mensagem enviada a um dispositivo deve seguir a seguinte estrutura:
 ```ts
 {
   deviceId: string, // Um identificador único para o dispositivo alvo.
+  correlationId: string, // Um ID único para correlacionar a resposta a esta mensagem específica.
   commands: Array<{ // Uma lista de comandos a serem executados no dispositivo.
     correlationId: string, // Um ID único para correlacionar a resposta a este comando específico.
     command: string, // O tipo de comando a ser executado (ex: "deploy", "update", "undeploy").
@@ -97,4 +98,21 @@ Ao receber este comando, o dispositivo encerrará e removerá o serviço identif
 
 Ao adicionar novos serviços é possível determinar comandos especifico para eles.
 
+## Comandos Básicos do Kubenetes
 
+```sh
+## Consumo de recurso do Cluster
+kubectl top nodes
+
+## Consumo de recurso dos Pods
+kubectl top pods -A
+```
+
+## Ambiente de Preempção
+
+Para facilitar os testes de preempção por memoria o ideal é manter um quantidade de memória para o S.O e para os sistemas básicos do Kubernetes para garantir o funcionamento básico do cluster. Para reserva memoria o arquivo `/etc/systemd/system/k3s.service` deve ser modificado para que o executável do k3s receba os argumentos abaixo.
+
+```sh
+--kubelet-arg="system-reserved=memory=1Gi" \
+--kubelet-arg="kube-reserved=memory=1Gi"
+```

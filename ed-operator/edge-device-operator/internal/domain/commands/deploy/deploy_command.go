@@ -81,11 +81,17 @@ func (d *DeployCommand) Execute() (interface{}, error) {
 }
 
 func (d *DeployCommand) createPodSpec() corekubev1.PodSpec {
+	var envVars []corekubev1.EnvVar
+	for key, value := range d.Microservice.Env {
+		envVars = append(envVars, corekubev1.EnvVar{Name: key, Value: value})
+	}
+
 	podSpec := corekubev1.PodSpec{
 		Containers: []corekubev1.Container{
 			{
 				Name:  d.Microservice.Name,
 				Image: d.Microservice.Image,
+				Env:   envVars,
 				Resources: corekubev1.ResourceRequirements{
 					Limits: corekubev1.ResourceList{
 						corekubev1.ResourceCPU: *resource.NewMilliQuantity(

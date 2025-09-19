@@ -116,6 +116,17 @@ func (c *MQTTClient) PublishResult(cmd domain_commands.ICommand, Success bool, M
 	return c.publish(c.config.ResultsTopic, payload)
 }
 
+func (c *MQTTClient) PublishCloudCommand(cmd dto.CommandDTO) error {
+	c.log.Info(fmt.Sprintf("Publishing command:%s to Pod:%s", cmd.Command, cmd.Args.Name))
+	payload, err := json.MarshalIndent(cmd, "", "  ")
+	if err != nil {
+		c.log.Error(err, "Failed to marshal command")
+		return nil
+	}
+
+	return c.publish(c.config.CloudTopic, payload)
+}
+
 func (c *MQTTClient) PublishAck(CorrelationId string) error {
 	c.log.Info(fmt.Sprintf("Publishing ack: CorrelationId=%s", CorrelationId))
 	payload, err := json.MarshalIndent(dto.AckDto{
