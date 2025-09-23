@@ -1,6 +1,14 @@
 import time
 import argparse
 import os
+import signal
+
+STOP_LOOP = False
+
+def on_exit(sig, frame):  
+    print ("Recebido sinal de encerramento")
+    global STOP_LOOP
+    STOP_LOOP = True
 
 def main():
     default_blocos = int(os.environ.get("ALOC_MEMO_BLOCK", 20))
@@ -20,23 +28,21 @@ def main():
 
     blocos = []
 
+    signal.signal(signal.SIGINT, on_exit)
+    signal.signal(signal.SIGTERM, on_exit)
+
     print(f"Iniciando stress de memória: {MB_POR_BLOCO}MB × {NUM_BLOCOS} blocos")
+    for i in range(NUM_BLOCOS):
+        bloco = bytearray(MB_POR_BLOCO * 1024 * 1024)
+        bloco[:] = b'\xAA' * len(bloco)
+        blocos.append(bloco)
+        print(f"Bloco {i+1}/{NUM_BLOCOS} alocado — Total: {(i+1)*MB_POR_BLOCO} MB")
+        if STOP_LOOP:
+            break
+        time.sleep(INTERVALO)
 
-    try:
-        for i in range(NUM_BLOCOS):
-            bloco = bytearray(MB_POR_BLOCO * 1024 * 1024)
-            bloco[:] = b'\xAA' * len(bloco)
-            blocos.append(bloco)
-            print(f"Bloco {i+1}/{NUM_BLOCOS} alocado — Total: {(i+1)*MB_POR_BLOCO} MB")
-            time.sleep(INTERVALO)
-
-        print("Alocação concluída. Pressione Ctrl+C para liberar a memória.")
-        while True:
-            time.sleep(10)
-
-    except KeyboardInterrupt:
-        print("\nEncerrando e liberando memória.")
-        blocos.clear()
+    while not STOP_LOOP:
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()
