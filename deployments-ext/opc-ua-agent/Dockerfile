@@ -1,6 +1,8 @@
-FROM docker.io/golang:1.24.2 AS builder
+FROM docker.io/golang:1.24.2-alpine3.21 AS builder
 
 WORKDIR /workspace
+
+run apk add --no-cache gcc musl-dev sqlite-dev
 
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -11,11 +13,11 @@ COPY cmd/main.go cmd/main.go
 COPY config/ config/
 COPY internal/ internal/
 
-RUN go build -a -o opc-ua-agent cmd/main.go
+RUN CGO_ENABLED=1 go build -a -o opc-ua-agent cmd/main.go
 
-FROM gcr.io/distroless/static:nonroot
+FROM alpine:3.21
 WORKDIR /
-COPY --from=builder /workspace/opc-ua-agent .
-USER 65532:65532
+COPY --from=builder /workspace/opc-ua-agent opc-ua-agent
+RUN apk add --no-cache sqlite-libs
 
 ENTRYPOINT ["/opc-ua-agent"]

@@ -182,10 +182,12 @@ func (c *OPCUAClient) onData() {
 			}
 		}
 
-		c.log.Info("Publishing data in mqtt broker...")
-		if err := c.output.PublishData(c.Device.DeviceId, payload); err != nil {
-			c.log.Error(err, "Failed to publish data in mqtt broker")
+		if len(payload) > 1 {
+			c.log.Info("Publishing data in mqtt broker...")
+			if err := c.output.PublishData(c.Device.DeviceId, payload); err != nil {
+				c.log.Error(err, "Failed to publish data in mqtt broker")
+			}
+			c.log.Info("Data published in mqtt broker")
 		}
-		c.log.Info("Data published in mqtt broker")
 	}
 }
