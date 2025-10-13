@@ -1,0 +1,8 @@
+FROM docker.io/golang:1.24.2-alpine3.21
+
+RUN apk add --no-cache python3 py3-pip build-base
+RUN pip3 install asyncua --break-system-packages
+
+CMD uaserver
+
+

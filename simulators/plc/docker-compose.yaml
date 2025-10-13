@@ -1,0 +1,17 @@
+services:
+  ## main
+  plc-dev:
+    image: docker.io/golang:1.24.2-alpine3.21
+    command: [ "tail", "-f", "/dev/null" ]
+    volumes:
+      - .:/app/plc
+    ports:
+      - 4841:4841
+    environment:
+      - DEVICE_ID=ff0001
+      - DEVICE_PARENT_ID=dd0001
+      - DEVICE_PARENT_URL=opc.tcp://172.31.212.236:4840
+      
+networks:
+  default:
+    name: opc-dev
