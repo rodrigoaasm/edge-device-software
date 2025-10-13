@@ -65,13 +65,13 @@ func (c *MQTTClient) HandlerMessage(q mqtt.Client, m mqtt.Message) {
 			if command, err := c.commandFactory.Make(commandDTO); err == nil {
 				data, cerr := command.Execute()
 				if cerr != nil {
-					c.PublishResult(command, false, "Failed to execute command."+cerr.Error(), data)
+					c.PublishResult(commandDTO.CorrelationId, false, "Failed to execute command."+cerr.Error(), data)
 					continue
 				}
 
-				c.PublishResult(command, true, "", data)
+				c.PublishResult(commandDTO.CorrelationId, true, "", data)
 			} else {
-				c.PublishResult(command, false, "Command invalid. "+err.Error(), nil)
+				c.PublishResult(commandDTO.CorrelationId, false, "Command invalid. "+err.Error(), nil)
 			}
 		}
 	}
@@ -97,11 +97,11 @@ func (c *MQTTClient) publish(topic string, payload []byte) error {
 	return nil
 }
 
-func (c *MQTTClient) PublishResult(cmd domain_commands.ICommand, Success bool, Message string, Data interface{}) error {
-	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", cmd.GetCorrelationId(), Success, Message))
+func (c *MQTTClient) PublishResult(correlationId string, Success bool, Message string, Data interface{}) error {
+	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", correlationId, Success, Message))
 	payload, err := json.MarshalIndent(dto.ResultDto{
 		DeviceId:      c.config.DeviceId,
-		CorrelationId: cmd.GetCorrelationId(),
+		CorrelationId: correlationId,
 		Success:       Success,
 		Data:          Data,
 		Message:       Message,
