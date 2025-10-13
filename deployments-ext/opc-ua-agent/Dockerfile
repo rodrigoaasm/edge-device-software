@@ -2,7 +2,7 @@ FROM docker.io/golang:1.24.2-alpine3.21 AS builder
 
 WORKDIR /workspace
 
-run apk add --no-cache gcc musl-dev sqlite-dev
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 
 COPY go.mod go.mod
 COPY go.sum go.sum

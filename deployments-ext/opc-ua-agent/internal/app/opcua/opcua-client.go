@@ -2,14 +2,12 @@ package opcua
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/debug"
 	"github.com/gopcua/opcua/ua"
 	"opc.ua.agent/internal/domain/entities"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
@@ -40,12 +38,10 @@ func NewOPCUAClient(device entities.Device, log logr.Logger, outputDriver domain
 }
 
 func (c *OPCUAClient) Connect() error {
-	var endpoint = flag.String("endpoint", "opc.tcp://"+c.Device.Url, "OPC UA Endpoint URL")
-	flag.BoolVar(&debug.Enable, "debug", false, "enable debug logging")
-	flag.Parse()
+	var endpoint = "opc.tcp://" + c.Device.Url
 
-	c.log.Info("Verify OPC UA endpoint: " + *endpoint)
-	eps, err := opcua.GetEndpoints(context.Background(), *endpoint)
+	c.log.Info("Verify OPC UA endpoint: " + endpoint)
+	eps, err := opcua.GetEndpoints(context.Background(), endpoint)
 	if err != nil {
 		return err
 	}
@@ -54,7 +50,7 @@ func (c *OPCUAClient) Connect() error {
 	}
 
 	c.log.Info("Connecting to OPC UA endpoint: " + c.Device.Url)
-	if c.client, err = opcua.NewClient(*endpoint, opcua.SecurityMode(ua.MessageSecurityModeNone)); err != nil {
+	if c.client, err = opcua.NewClient(endpoint, opcua.SecurityMode(ua.MessageSecurityModeNone)); err != nil {
 		return err
 	}
 	if err = c.client.Connect(context.Background()); err != nil {
@@ -76,8 +72,7 @@ func (c *OPCUAClient) Disconnect() error {
 }
 
 func (c *OPCUAClient) PublishData(topic string, data interface{}) error {
-
-	nodeID := ua.NewStringNodeID(4, OPC_PATH+"."+c.Device.DeviceId+"_"+topic)
+	nodeID := ua.NewStringNodeID(uint16(c.Device.Ns), c.Device.Path+".opc_"+topic)
 	vData, err := ua.NewVariant(data.(bool))
 	if err != nil {
 		return err
@@ -154,26 +149,27 @@ func (c *OPCUAClient) onData() {
 		var payload map[string]interface{} = make(map[string]interface{})
 		payload["timestamp"] = time.Now().Unix()
 		c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
-		nodeID := ua.NewStringNodeID(OPC_NS, OPC_PATH)
+		nodeID := ua.NewStringNodeID(uint16(c.Device.Ns), c.Device.Path)
 
 		c.log.Info(fmt.Sprintf("Getting all vars in NodeID=%s...", nodeID.String()))
 		browseResp, err := c.getNodeList(nodeID)
 		if err != nil {
 			c.log.Error(err, "Erro no Browse:")
+			return
 		}
 
 		c.log.Info(fmt.Sprintf("Found %d nodes", len(browseResp.Results)))
 		for _, result := range browseResp.Results {
 			c.log.Info(fmt.Sprintf("Found %d references", len(result.References)))
 			for _, ref := range result.References {
-				if strings.HasPrefix(ref.DisplayName.Text, c.Device.DeviceId) {
+				if strings.HasPrefix(ref.DisplayName.Text, "opc_") {
 					c.log.Info(fmt.Sprintf("Getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n",
 						ref.NodeID.String(),
 						ref.BrowseName.Name,
 						ref.DisplayName.Text,
 					))
 					if value, err := c.getNodeValue(ref.NodeID.NodeID); err == nil {
-						attrKey := strings.TrimPrefix(ref.DisplayName.Text, c.Device.DeviceId+"_")
+						attrKey := strings.TrimPrefix(ref.DisplayName.Text, "opc_")
 						payload[attrKey] = value
 					} else {
 						c.log.Error(err, "Unable to getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n")

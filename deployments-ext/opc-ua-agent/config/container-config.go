@@ -27,7 +27,7 @@ func getEnv(key string) string {
 
 func NewContainerConfig() *ContainerConfig {
 	con := ContainerConfig{}
-	con.ConsumerTopic = getEnvOrDefault("CONSUMER_TOPIC", "device/config")
+	con.ConsumerTopic = getEnvOrDefault("CONSUMER_TOPIC", "device/config/opc")
 	con.ResultsTopic = getEnvOrDefault("RESULTS_TOPIC", "device/results")
 	con.DataTopic = getEnvOrDefault("DATA_TOPIC", "device/data")
 	con.DeviceId = getEnv("DEVICE_ID")
