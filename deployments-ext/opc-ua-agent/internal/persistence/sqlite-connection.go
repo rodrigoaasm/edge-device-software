@@ -16,7 +16,7 @@ func Migrate(con *sql.DB) {
 		device_id VARCHAR(6) UNIQUE,
 		device_url VARCHAR(20),
 		opc_path VARCHAR(60),
-		interval_seconds INTEGER,
+		interval_seconds REAL,
 		opc_ns INTEGER,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

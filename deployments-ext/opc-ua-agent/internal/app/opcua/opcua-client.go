@@ -59,7 +59,7 @@ func (c *OPCUAClient) Connect() error {
 	c.log.Info("OPC UA endpoint connected " + c.Device.Url)
 
 	c.log.Info("Starting data polling for device: " + c.Device.DeviceId)
-	c.ticker = time.NewTicker(time.Duration(c.Device.IntervalSeconds) * time.Second)
+	c.ticker = time.NewTicker(time.Duration(c.Device.Interval) * time.Millisecond)
 	go c.onData()
 	c.log.Info("Data polling for device: " + c.Device.DeviceId + " started")
 
@@ -112,6 +112,7 @@ func (c *OPCUAClient) getNodeList(nodeId *ua.NodeID) (*ua.BrowseResponse, error)
 			{
 				NodeID:          nodeId,
 				BrowseDirection: ua.BrowseDirectionForward,
+				ReferenceTypeID: ua.NewNumericNodeID(0, 33),
 				IncludeSubtypes: true,
 				NodeClassMask:   uint32(ua.NodeClassAll),
 				ResultMask:      uint32(ua.BrowseResultMaskAll),
