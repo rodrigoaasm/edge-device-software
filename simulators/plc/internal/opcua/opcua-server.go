@@ -27,12 +27,13 @@ func Setup() {
 	root_obj_node.AddRef(nns_obj, id.HasComponent, true)
 
 	vars := []string{"screwPosition", "injectPressure", "pressure", "temp"}
+	prefix := "opc_"
 	for _, varName := range vars {
-		nodeID := ua.NewStringNodeID(nodeNS.ID(), varName)
+		nodeID := ua.NewStringNodeID(nodeNS.ID(), prefix+varName)
 		node := server.NewNode(
 			nodeID,
 			map[ua.AttributeID]*ua.DataValue{
-				ua.AttributeIDBrowseName: server.DataValueFromValue(attrs.BrowseName(varName)),
+				ua.AttributeIDBrowseName: server.DataValueFromValue(attrs.BrowseName(prefix + varName)),
 				ua.AttributeIDNodeClass:  server.DataValueFromValue(uint32(ua.NodeClassVariable)),
 			},
 			nil,

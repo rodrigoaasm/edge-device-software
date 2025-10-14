@@ -69,7 +69,7 @@ func (c *OPCUAClient) Close() {
 
 func (c *OPCUAClient) WriteVar(opcNs uint16, path string, vars map[string]interface{}) error {
 	for key, val := range vars {
-		nodeID := ua.NewStringNodeID(opcNs, fmt.Sprintf("%s%s", path, key))
+		nodeID := ua.NewStringNodeID(opcNs, fmt.Sprintf("%sopc_%s", path, key))
 		vData, err := ua.NewVariant(val.(float64))
 		if err != nil {
 			return err
