@@ -16,12 +16,5 @@ RUN go build -a -o plc cmd/main.go
 FROM alpine:3.21
 WORKDIR /
 COPY --from=builder /workspace/plc plc
-COPY ./entrypoint.sh entrypoint.sh
-RUN chmod +x entrypoint.sh
 
-RUN apk add --no-cache python3 py3-pip build-base
-RUN pip3 install asyncua --break-system-packages
-
-EXPOSE 4840
-
-ENTRYPOINT [ "./entrypoint.sh" ]
+ENTRYPOINT ["./plc"]

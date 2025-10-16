@@ -35,7 +35,7 @@ func NewContainerConfig() *ContainerConfig {
 		panic(err)
 	}
 	con.ParentId = getEnv("DEVICE_PARENT_ID")
-	con.ParentURL = getEnvOrDefault("DEVICE_PARENT_URL", "opc.tcp://172.31.212.236:4840")
+	con.ParentURL = getEnvOrDefault("DEVICE_PARENT_URL", "opc.tcp://dell-g15:4840")
 
 	return &con
 }

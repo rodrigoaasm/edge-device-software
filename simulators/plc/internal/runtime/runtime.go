@@ -93,17 +93,10 @@ func (p *PLCRunner) Stop() {
 func (p *PLCRunner) Run(selfClient OPCUAClient, lineClient OPCUAClient, log logr.Logger) {
 	var i int = 0
 	var oldMchOn bool = false
-	// log.Info("Migrate scheme to OPC-UA internal server..")
-	// if err := lineClient.Migrate(context.Background(), OPC_NS_INTERNAL, OPC_PATH_EXTERNAL); err != nil {
-	// 	panic(err)
-	// }
-	// log.Info("Scheme migrated to OPC-UA internal server.")
 
 	go p.genValues(log)
 	for {
 		time.Sleep(time.Duration(p.tWindow) * time.Millisecond)
-		log.Info("plc scan...")
-
 		select {
 		case <-p.stopCh:
 			log.Info("stopped plc")
@@ -117,7 +110,7 @@ func (p *PLCRunner) Run(selfClient OPCUAClient, lineClient OPCUAClient, log logr
 
 			var errWrite error
 			var vars map[string]interface{}
-			if mchOn.(bool) {
+			if mchOn != nil && mchOn.(bool) {
 				log.Info("Status=On")
 				if i < len(p.screwPositionTs) {
 					vars = p.getValues(i)
@@ -126,11 +119,9 @@ func (p *PLCRunner) Run(selfClient OPCUAClient, lineClient OPCUAClient, log logr
 					vars = p.getValuesZero(i)
 				}
 				errWrite = selfClient.WriteVar(OPC_NS_INTERNAL, "", vars)
-			} else {
+			} else if oldMchOn {
 				log.Info("Status=Paused")
-				if oldMchOn {
-					go p.genValues(log)
-				}
+				go p.genValues(log)
 				vars = p.getValuesZero(i)
 				errWrite = selfClient.WriteVar(OPC_NS_INTERNAL, "", vars)
 				i = 0

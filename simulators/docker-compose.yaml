@@ -3,10 +3,19 @@ services:
     build:
       context: ./camera
       dockerfile: Dockerfile
-    volumes:
-      - .:/app/opc-ua-agent
     environment:
       DEVICE_PY_BROKER_HOST: 172.31.212.236
+      DEVICE_PY_DEVICE_ID: cc0001
+  
+  injector001:
+    build:
+      context: ./plc
+      dockerfile: Dockerfile
+    environment:
+      CAPT_FREQUENCY: 100
+      DEVICE_ID: ff0001
+      DEVICE_PARENT_ID: dd0001
+      DEVICE_PARENT_URL: "opc.tcp://dell-g15:4840"
       
 networks:
   default:

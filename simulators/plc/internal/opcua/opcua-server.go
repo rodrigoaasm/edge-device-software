@@ -22,8 +22,17 @@ func Setup() {
 	root_obj_node := root_ns.Objects()
 
 	nodeNS := server.NewNodeNameSpace(srv, "NodeVars")
-	nns_obj := nodeNS.Objects()
 	srv.AddNamespace(nodeNS)
+
+	nns_obj := server.NewNode(
+		ua.NewStringNodeID(nodeNS.ID(), "NodeVars"),
+		map[ua.AttributeID]*ua.DataValue{
+			ua.AttributeIDBrowseName: server.DataValueFromValue(attrs.BrowseName("NodeVars")),
+			ua.AttributeIDNodeClass:  server.DataValueFromValue(uint32(ua.NodeClassObject)),
+		},
+		nil, nil,
+	)
+	nodeNS.AddNode(nns_obj)
 	root_obj_node.AddRef(nns_obj, id.HasComponent, true)
 
 	vars := []string{"screwPosition", "injectPressure", "pressure", "temp"}
