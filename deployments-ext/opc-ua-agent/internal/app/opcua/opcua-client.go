@@ -91,13 +91,12 @@ func (c *OPCUAClient) PublishData(topic string, data interface{}) error {
 		},
 	}
 
-	c.log.Info("Writing OPC. Data: " + fmt.Sprintf("%v", data) + " key: " + c.Device.DeviceId + "_" + topic)
+	c.log.Info("Writing OPC. Data: " + fmt.Sprintf("%v", data) + " key: " + nodeID.String())
 	_, err = c.client.Write(context.Background(), req)
 	if err != nil {
 		return utils.EmitError(c.log, err.Error())
 	}
-
-	c.log.Info("Write OPC. Data: " + fmt.Sprintf("%v", data) + " key: " + topic)
+	c.log.Info("Write OPC. Data: " + fmt.Sprintf("%v", data) + " key: " + nodeID.String())
 	return nil
 }
 
