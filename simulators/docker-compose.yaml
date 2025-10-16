@@ -1,0 +1,13 @@
+services:
+  camera001:
+    build:
+      context: ./camera
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app/opc-ua-agent
+    environment:
+      DEVICE_PY_BROKER_HOST: 172.31.212.236
+      
+networks:
+  default:
+    name: devices
