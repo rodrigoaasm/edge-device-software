@@ -167,7 +167,7 @@ func (d *DeployCommand) createServiceSchema(t corekubev1.ServiceType) *apiv1.Ser
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				"app": cmd_commons.GetServiceName(d.Microservice.Name, t),
+				"app": d.Microservice.Name,
 			},
 			Type: t,
 			Ports: []apiv1.ServicePort{
