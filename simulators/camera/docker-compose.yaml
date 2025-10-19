@@ -1,0 +1,17 @@
+services:
+  camera001:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    volumes:
+      - ./:/app
+    environment:
+      DEVICE_PY_BROKER_HOST: 172.31.212.236
+      DEVICE_PY_DEVICE_ID: cc0001
+      DEVICE_PY_AWS_S3_ENDPOINT: http://minio:9000
+      DEVICE_PY_AWS_DEFAULT_REGION: us-east-1
+      DEVICE_PY_AWS_BUCKET_NAME: ia-imagens-injetora
+networks:
+  default:
+    name: devices
