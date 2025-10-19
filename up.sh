@@ -5,6 +5,7 @@ kubectl apply -f roles/role_deployment.yaml
 kubectl apply -f roles/role_service.yaml
 kubectl apply -f roles/role_pod_reader.yaml
 kubectl apply -f roles/role_events.yaml
+kubectl apply -f roles/role_monitoring.yaml
 echo "roles created"
 
 echo "create namespace"
@@ -17,6 +18,7 @@ kubectl apply -f roles/role_deployment_binding.yaml
 kubectl apply -f roles/role_service_binding.yaml
 kubectl apply -f roles/role_pod_reader_binding.yaml
 kubectl apply -f roles/role_events_binding.yaml
+kubectl apply -f roles/role_monitoring_binding.yaml
 echo "service account created"
 
 echo "creating profiles"

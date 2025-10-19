@@ -15,10 +15,14 @@ spec:
       labels:
         app: telegraf-bridge
     spec:
+      serviceAccountName: telegraf-service
       priorityClassName: default-service
       containers:
       - name: telegraf-bridge
         image: telegraf-bridge
+        env:
+          - name: DEVICE_ID
+            value: "abc123"    
         resources:
           limits:
             memory: "256Mi"
