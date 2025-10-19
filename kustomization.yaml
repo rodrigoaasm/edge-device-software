@@ -7,6 +7,7 @@ resources:
 - deployments-default/influxdb/deployment.yaml
 - deployments-default/telegraf-agg/deployment.yaml
 - deployments-default/telegraf-bridge/deployment.yaml
+- deployments-default/minio/deployment.yaml
 - ed-operator/deployment.yaml
 - nodeport-default/nodeports.yaml
 
@@ -30,3 +31,7 @@ images:
 - name: ed-operator
   newName: rodrigoasmaia/ed-operator
   newTag: 0.5.2
+
+- name: minio
+  newName: quay.io/minio/minio
+  newTag: RELEASE.2025-07-23T15-54-02Z

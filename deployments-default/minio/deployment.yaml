@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  labels:
+    app: minio
+  namespace: ed-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      priorityClassName: default-service
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
+        args: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+        env:
+        - name: MINIO_ROOT_USER
+          value: "admin"
+        - name: MINIO_ROOT_PASSWORD
+          value: "qweasd123"
+        - name: MINIO_ACCESS_KEY
+          value: "DrFpNYPGjVEi"
+        - name: MINIO_SECRET_KEY
+          value: "YWoVMlPqX2vL7cml2X7lN7CHvGH4yPzb5sXANHFo874="
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+          requests:
+            memory: "128Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: minio-data
+          mountPath: /data
+      volumes:
+      - name: minio-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    app: minio
+  namespace: ed-system
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: data
+    port: 9000
+    targetPort: 9000
+  - name: dashboard
+    port: 9001
+    targetPort: 9001
+  type: ClusterIP

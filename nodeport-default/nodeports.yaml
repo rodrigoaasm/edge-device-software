@@ -31,3 +31,23 @@ spec:
       port: 8086
       targetPort: 8086
       nodePort: 30086
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-nodeport
+  namespace: ed-system
+spec:
+  selector:
+    app: minio
+  type: NodePort
+  ports:
+    - name: data
+      port: 9000
+      targetPort: 9000
+      nodePort: 30900
+    - name: dashboard
+      port: 9001
+      targetPort: 9001
+      nodePort: 30901
+
