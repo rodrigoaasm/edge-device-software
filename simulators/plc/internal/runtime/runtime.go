@@ -168,7 +168,27 @@ func linspace(start, end float64, num int) []float64 {
 
 func (p *PLCRunner) genValues(log logr.Logger) {
 	log.Info("Generating values for next tWindow...")
-	// Injection Screw Position
+
+	// Pressão de Injeção
+	const meanMaxInjPress = 136.1801
+	const stdMaxInjPress = 1.1938
+
+	// Contra-Pressão (Back Pressure)
+	const meanAvgBackPress = 38.0278
+	const stdAvgBackPress = 2.3372
+
+	// Temperatura do Molde e Pico
+	const meanMoldTemp = 22.0258
+	const stdMoldTemp = 2.9231
+	const picoTempMaximo = 275.0
+
+	picoPressaoReal := meanMaxInjPress + rand.NormFloat64()*stdMaxInjPress
+	pressaoRecalque := picoPressaoReal * 0.3 // Recalque como 30% do pico
+	backPressureReal := meanAvgBackPress + rand.NormFloat64()*stdAvgBackPress
+	temperaturaBaseReal := meanMoldTemp + rand.NormFloat64()*stdMoldTemp
+	picoPressaoMoldeSimulado := picoPressaoReal * 0.4 // Simulação da pressão no molde
+
+	// --- GRÁFICO 1: Posição do Parafuso---
 	copy(p.screwPositionTs[0:p.injectScrewPosition], linspace(2.8, -0.7, p.injectScrewPosition))
 	// Manutenção de posição
 	for i := p.injectScrewPosition; i < p.manu1ScrewPosition; i++ {
@@ -187,57 +207,71 @@ func (p *PLCRunner) genValues(log logr.Logger) {
 		linspace(-0.7, 2.5, len(p.screwPositionTs)-p.returnScrewPosition),
 	)
 
-	// Pressão de Injeção
+	// --- GRÁFICO 2: Pressão de Injeção ----
 	for i := range p.machineInjectionTs {
-		p.machineInjectionTs[i] = -0.6
+		p.machineInjectionTs[i] = 0.0
 	}
 	// Pico de injeção
 	for i := p.startInjection; i < p.maxStep1Injection; i++ {
-		p.machineInjectionTs[i] = 4.5
+		p.machineInjectionTs[i] = picoPressaoReal
 	}
 	for i := p.maxStep1Injection; i < p.maxStep2Injection; i++ {
-		p.machineInjectionTs[i] = 0.5
+		p.machineInjectionTs[i] = pressaoRecalque + 10
 	}
 	// Pressão de recalque
 	for i := p.maxStep2Injection; i < p.repressInjection; i++ {
-		p.machineInjectionTs[i] = 0.4
+		p.machineInjectionTs[i] = pressaoRecalque
 	}
-	// Queda de pressão
+	// Queda de pressão (intervalo entre recalque e dosagem)
 	for i := p.repressInjection; i < p.down1Pressure; i++ {
-		p.machineInjectionTs[i] = -1.0
+		p.machineInjectionTs[i] = 0.0
 	}
 	for i := p.down1Pressure; i < p.down2Pressure; i++ {
-		p.machineInjectionTs[i] = -0.8
+		p.machineInjectionTs[i] = 0.0
 	}
 
-	// Gráfico 3: Pressão no Molde
+	// Assumindo que p.returnScrewPosition (do gráfico de posição) é o índice de início da dosagem
+	for i := p.returnScrewPosition; i < len(p.machineInjectionTs); i++ {
+		// Usa o valor real da contra-pressão (~38 MPa)
+		p.machineInjectionTs[i] = backPressureReal
+	}
+	// --- Fim do Gráfico 2 ---
+
+	// --- GRÁFICO 3: Pressão no Molde - ALTERADO ---
 	for i := range p.machinePressuseTs {
-		p.machinePressuseTs[i] = -2.0
+		p.machinePressuseTs[i] = 0.0
 	}
 	// Preenchimento rápido do molde
 	copy(
 		p.machinePressuseTs[p.startMaxPressure:p.endMaxPressure],
-		linspace(-2.0, 9.5, p.endMaxPressure-p.startMaxPressure),
+		linspace(0.0, picoPressaoMoldeSimulado, p.endMaxPressure-p.startMaxPressure),
 	)
 	// Queda exponencial da pressão
 	decaimentoSpace := linspace(0, 5, len(p.machinePressuseTs)-p.endMaxPressure)
 	for i := 0; i < len(p.machinePressuseTs)-p.endMaxPressure; i++ {
-		p.machinePressuseTs[p.endMaxPressure+i] = 9.5*math.Exp(-decaimentoSpace[i]) - 2.0
+		p.machinePressuseTs[p.endMaxPressure+i] = picoPressaoMoldeSimulado * math.Exp(-decaimentoSpace[i])
 	}
 	// Adicionando ruído
 	for i := range p.machinePressuseTs {
-		p.machinePressuseTs[i] += rand.NormFloat64() * 0.05
+		p.machinePressuseTs[i] += rand.NormFloat64() * 0.5
+	}
+	// --- Fim do Gráfico 3 ---
+
+	// --- GRÁFICO 4: Temperatura no Molde - ALTERADO ---
+	// Subida rápida da temperatura
+	subidaSpace := linspace(temperaturaBaseReal, picoTempMaximo, p.maxTemp)
+	copy(p.machineTempTs[0:p.maxTemp], subidaSpace)
+
+	// Resfriamento (agora exponencial, não linear)
+	resfriamentoSpace := linspace(0, 4, len(p.machineTempTs)-p.maxTemp)
+	for i := 0; i < len(p.machineTempTs)-p.maxTemp; i++ {
+		resfriamento := (picoTempMaximo - temperaturaBaseReal) * math.Exp(-resfriamentoSpace[i])
+		p.machineTempTs[p.maxTemp+i] = temperaturaBaseReal + resfriamento
 	}
 
-	// Subida rápida da temperatura
-	subidaSpace := linspace(0, 10, p.maxTemp)
-	for i := 0; i < p.maxTemp; i++ {
-		p.machineTempTs[i] = 1.4*(1-math.Exp(-subidaSpace[i])) - 2.8
-	}
-	// Resfriamento lento e linear
-	copy(p.machineTempTs[p.maxTemp:], linspace(1.4, -2.5, len(p.machineTempTs)-p.maxTemp))
 	// Adicionando ruído significativo
 	for i := range p.machineTempTs {
-		p.machineTempTs[i] += rand.NormFloat64() * 0.15
+		p.machineTempTs[i] += rand.NormFloat64() * 0.5
 	}
+	// --- Fim do Gráfico 4 ---
 }
