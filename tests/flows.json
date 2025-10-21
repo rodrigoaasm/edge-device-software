@@ -1,20 +1,20 @@
 [
     {
-        "id": "f6f2187d.f17ca8",
+        "id": "b8dcde19f9933505",
         "type": "tab",
         "label": "Flow 1",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "57be9f21e206fa8e",
+        "id": "c114948f9f2c11af",
         "type": "mqtt in",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Escuta Linhas",
         "topic": "device/data/dd0001",
         "qos": "1",
         "datatype": "json",
-        "broker": "e47527319b6d8252",
+        "broker": "83204903a84bd4d7",
         "nl": false,
         "rap": true,
         "rh": 0,
@@ -23,14 +23,14 @@
         "y": 160,
         "wires": [
             [
-                "3b7ee4e82fe813fc"
+                "705477d6503a0487"
             ]
         ]
     },
     {
-        "id": "61a5135ba0466505",
+        "id": "bc3faf8c81e3ddc1",
         "type": "mqtt out",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Capturar foto(atuacao camera)",
         "topic": "device/config/cc0001",
         "qos": "0",
@@ -40,15 +40,15 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "e47527319b6d8252",
+        "broker": "83204903a84bd4d7",
         "x": 730,
         "y": 160,
         "wires": []
     },
     {
-        "id": "3b7ee4e82fe813fc",
+        "id": "705477d6503a0487",
         "type": "function",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Maquina de estado",
         "func": "const key = \"analysis_sensor_start_1_f_\"\n\nvar tag = flow.get(key)\nflow.set(key, msg.payload[key])\nif(!tag && msg.payload[key]) {\n    return msg\n}\n\nreturn null;",
         "outputs": 1,
@@ -61,15 +61,15 @@
         "y": 160,
         "wires": [
             [
-                "03b8c00516430be3",
-                "61a5135ba0466505"
+                "78aac2ec9ac1a5cf",
+                "bc3faf8c81e3ddc1"
             ]
         ]
     },
     {
-        "id": "03b8c00516430be3",
+        "id": "78aac2ec9ac1a5cf",
         "type": "debug",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Call camera",
         "active": true,
         "tosidebar": true,
@@ -84,9 +84,9 @@
         "wires": []
     },
     {
-        "id": "40d297eb376f2a08",
+        "id": "8bfce9598a20b2d4",
         "type": "inject",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Injectar true",
         "props": [
             {
@@ -101,17 +101,17 @@
         "payload": "{\"analysis_sensor_start_1_f_\":true,\"analysis_timer\":5000,\"analysis_turn_trash\":false,\"deviceId\":\"dd0001\",\"in_produce_lids\":29,\"machine_lids_error\":false,\"produced_lids\":33,\"timestamp\":1760489075}",
         "payloadType": "json",
         "x": 230,
-        "y": 240,
+        "y": 220,
         "wires": [
             [
-                "3b7ee4e82fe813fc"
+                "705477d6503a0487"
             ]
         ]
     },
     {
-        "id": "113f0b3aec329854",
+        "id": "fafb27ba33be8495",
         "type": "inject",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Injectar false",
         "props": [
             {
@@ -126,39 +126,39 @@
         "payload": "{\"analysis_sensor_start_1_f_\":false,\"analysis_timer\":5000,\"analysis_turn_trash\":false,\"deviceId\":\"dd0001\",\"in_produce_lids\":29,\"machine_lids_error\":false,\"produced_lids\":33,\"timestamp\":1760489075}",
         "payloadType": "json",
         "x": 230,
-        "y": 300,
+        "y": 260,
         "wires": [
             [
-                "3b7ee4e82fe813fc"
+                "705477d6503a0487"
             ]
         ]
     },
     {
-        "id": "4bedb8a211f4d9d6",
+        "id": "d3922a0556a26f6d",
         "type": "mqtt in",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Escuta camera",
         "topic": "device/data/cc0001",
         "qos": "1",
         "datatype": "json",
-        "broker": "e47527319b6d8252",
+        "broker": "83204903a84bd4d7",
         "nl": false,
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 240,
-        "y": 400,
+        "x": 140,
+        "y": 420,
         "wires": [
             [
-                "91909bef98ec60b6",
-                "7d7270afd8a8e29a"
+                "3b748024d70112ee",
+                "2ace44ad1e58b907"
             ]
         ]
     },
     {
-        "id": "9e19c5b743fb9ea8",
+        "id": "b3daa3606f8b518c",
         "type": "mqtt out",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Atuar na linha",
         "topic": "device/config/opc",
         "qos": "0",
@@ -168,35 +168,36 @@
         "userProps": "",
         "correl": "",
         "expiry": "",
-        "broker": "e47527319b6d8252",
-        "x": 680,
-        "y": 400,
+        "broker": "83204903a84bd4d7",
+        "x": 960,
+        "y": 480,
         "wires": []
     },
     {
-        "id": "91909bef98ec60b6",
+        "id": "e49544dbcd69a570",
         "type": "function",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Template para opc",
-        "func": "\nreturn {\n    payload: {\n        \"analysis_turn_trash\": true,\n        \"timestamp\": Date.now()*1000,\n        \"deviceId\": \"dd0001\"\n    }\n};",
+        "func": "setTimeout(function() {\n    node.send({\n        payload: {\n            \"analysis_turn_trash\": true,\n            \"timestamp\": Date.now() * 1000,\n            \"deviceId\": \"dd0001\"\n        }\n    }); \n}, 500);\n\n\nreturn null",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 450,
-        "y": 400,
+        "x": 750,
+        "y": 480,
         "wires": [
             [
-                "9e19c5b743fb9ea8"
+                "b3daa3606f8b518c",
+                "6f07410630455d36"
             ]
         ]
     },
     {
-        "id": "7d7270afd8a8e29a",
+        "id": "3b748024d70112ee",
         "type": "debug",
-        "z": "f6f2187d.f17ca8",
+        "z": "b8dcde19f9933505",
         "name": "Retorno camera",
         "active": true,
         "tosidebar": true,
@@ -206,12 +207,91 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 440,
+        "x": 460,
         "y": 340,
         "wires": []
     },
     {
-        "id": "e47527319b6d8252",
+        "id": "eda22c632b792f68",
+        "type": "inject",
+        "z": "b8dcde19f9933505",
+        "name": "Injectar imagem",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"filename\":\"imagem.jpeg\"}",
+        "payloadType": "json",
+        "x": 140,
+        "y": 500,
+        "wires": [
+            [
+                "2ace44ad1e58b907"
+            ]
+        ]
+    },
+    {
+        "id": "6f07410630455d36",
+        "type": "debug",
+        "z": "b8dcde19f9933505",
+        "name": "Atuação OPC",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "2ace44ad1e58b907",
+        "type": "function",
+        "z": "b8dcde19f9933505",
+        "name": "Adapta dados",
+        "func": "\nreturn {\n    filename: msg.payload.filename\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 420,
+        "wires": [
+            [
+                "9c0014fa24449456"
+            ]
+        ]
+    },
+    {
+        "id": "9c0014fa24449456",
+        "type": "amazon s3",
+        "z": "b8dcde19f9933505",
+        "aws": "",
+        "bucket": "ia-imagens-injetora",
+        "filename": "",
+        "region": "us-east-1",
+        "name": "",
+        "x": 500,
+        "y": 480,
+        "wires": [
+            [
+                "e49544dbcd69a570"
+            ]
+        ]
+    },
+    {
+        "id": "83204903a84bd4d7",
         "type": "mqtt-broker",
         "name": "",
         "broker": "nanomq",
@@ -240,5 +320,13 @@
         "willMsg": {},
         "userProps": "",
         "sessionExpiry": ""
+    },
+    {
+        "id": "cd08eaf846a4f665",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-aws": "0.4.0"
+        }
     }
 ]
