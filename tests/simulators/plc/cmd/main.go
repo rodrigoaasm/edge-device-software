@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/go-logr/logr"
@@ -18,9 +19,9 @@ func main() {
 
 	config := config.NewContainerConfig()
 
-	opcua.Setup()
+	opcua.Setup(config)
 	log.Info("PLC Runtime for ed-operator tests...")
-	selfClient := opcua.NewOPCUAClient(log, config.DeviceId, "opc.tcp://localhost:4841")
+	selfClient := opcua.NewOPCUAClient(log, config.DeviceId, fmt.Sprintf("opc.tcp://localhost:%d", config.OpcInternalServerPort))
 	if err := selfClient.Connect(); err != nil {
 		log.Error(err, "Failed to connect to OPC UA")
 		return

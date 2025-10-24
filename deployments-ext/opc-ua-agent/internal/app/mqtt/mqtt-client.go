@@ -154,7 +154,7 @@ func (c *MQTTClient) PublishAck(CorrelationId string) error {
 	payload, err := json.MarshalIndent(dto.AckDto{
 		DeviceId:    c.config.DeviceId,
 		Correlation: CorrelationId,
-		Timestamp:   time.Now().Unix(),
+		Timestamp:   time.Now().UnixMicro(),
 		Ack:         true,
 	}, "", "  ")
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *MQTTClient) PublishAck(CorrelationId string) error {
 }
 
 func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message string, Data interface{}) error {
-	timestamp := time.Now().Unix()
+	timestamp := time.Now().UnixMicro()
 	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", CorrelationId, Success, Message))
 	payload, err := json.MarshalIndent(dto.ResultDto{
 		DeviceId:    c.config.DeviceId,

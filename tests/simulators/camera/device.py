@@ -5,8 +5,11 @@ import signal
 import time
 import random
 import json
+import ssl
 import paho.mqtt.client as mqtt
 import boto3
+import subprocess
+import sys
 from datetime import datetime
 
 
@@ -27,7 +30,6 @@ def make_payload(device_id, filepath ):
         "filename": filepath,
         "timestamp": now
     })
-
 
 STOP_LOOP = False
 
@@ -82,7 +84,7 @@ def make_on_message(trigger_topic, data_topic, result_topic, device_id, s3_clien
 
     return on_message
 
-def simule(host, port, data_topic, config_topic, result_topic, device_id, interval, s3_endpoint, s3_access_key, s3_secret_key, s3_region, s3_bucket):
+def simule(host, port, tls, tls_files, data_topic, config_topic, result_topic, device_id, interval, s3_endpoint, s3_access_key, s3_secret_key, s3_region, s3_bucket):
     s3_client = boto3.client(
         "s3",
         endpoint_url=s3_endpoint,
@@ -93,12 +95,20 @@ def simule(host, port, data_topic, config_topic, result_topic, device_id, interv
 
     trigger_topic = f"{config_topic}/{device_id}"
     client = mqtt.Client()
+    if tls:
+        client.tls_set(
+            ca_certs=f"{tls_files}/ca.pem",          
+            certfile=f"{tls_files}/device.pem",      
+            keyfile=f"{tls_files}/device.key",
+            tls_version=mqtt.ssl.PROTOCOL_TLSv1_2,
+            cert_reqs=ssl.CERT_NONE
+        )
     client.on_connect = make_on_connect(trigger_topic)
     client.on_disconnect = on_disconnect
     client.on_message = make_on_message(
         trigger_topic,
         f"{data_topic}/{device_id}",
-        f"{result_topic}/{device_id}",
+        f"{result_topic}",
         device_id,
         s3_client,
         s3_bucket,
@@ -121,9 +131,26 @@ def simule(host, port, data_topic, config_topic, result_topic, device_id, interv
 
     client.disconnect()
 
+def run_openssl(command, description):
+    print(f"{description}...")
+    try:
+        subprocess.run(command, check=True, shell=True, 
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("✅ SUCESSO!")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Comando: {e.cmd}. Erro: {e.stderr.decode()}")
+        sys.exit(1)
+
+def gen_certs(device_id) :
+    run_openssl(f"openssl genrsa -out /certs/{device_id}.key 2048", "Gerando chave privada")
+    run_openssl(f"openssl req -new -key /certs/{device_id}.key -out /certs/{device_id}.csr --subj \"/C=BR/ST=MG/L=Itajuba/O=UNIFEI/OU=IESTI/CN={device_id}/emailAddress=rodrigoasmaia@gmail.com\"" , "Gerando CSR")
+    run_openssl(f"openssl x509 -req -in /certs/{device_id}.csr -CA /certs/ca.pem -CAkey /certs/ca.key -CAcreateserial -out /certs/{device_id}.pem -days 3650", "Gerando certificado")
+
 if __name__ == "__main__":
     default_mqtt_host = os.environ.get("DEVICE_PY_BROKER_HOST", "localhost")
     default_mqtt_port = int(os.environ.get("DEVICE_PY_BROKER_PORT", 31883))
+    default_mqtt_tls = bool(os.environ.get("DEVICE_PY_BROKER_TLS", "false"))
+    default_mqtt_tls_file = os.environ.get("DEVICE_PY_BROKER_TLS_FILE", "/certs")
     default_mqtt_data_topic = os.environ.get("DEVICE_PY_DATA_TOPIC", "device/data")
     default_mqtt_result_topic = os.environ.get("DEVICE_PY_RESULT_TOPIC", "device/results")
     default_mqtt_config_topic = os.environ.get("DEVICE_PY_CONFIG_TOPIC", "device/config")
@@ -140,6 +167,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Simulador de dispositivo Python.")
     parser.add_argument("--host", type=str, default=default_mqtt_host, help="Host do servidor MQTT (padrão: localhost)")
     parser.add_argument("--port", type=int, default=default_mqtt_port, help="Porta do servidor MQTT (padrão: 1883)")
+    parser.add_argument("--tls", type=bool, default=default_mqtt_tls, help="Usar TLS (padrão: false)")
+    parser.add_argument("--tls_file", type=str, default=default_mqtt_tls_file, help="Arquivo de certificado TLS (padrão: /certs)")
     parser.add_argument("--data_topic", type=str, default=default_mqtt_data_topic, help="Tópico para publicação de dados (padrão: device/data)")
     parser.add_argument("--result_topic", type=str, default=default_mqtt_result_topic, help="Tópico para publicação de resultados (padrão: device/data)")
     parser.add_argument("--config_topic", type=str, default=default_mqtt_config_topic, help="Tópico para recebimento de atuações (padrão: device/config)")
@@ -153,9 +182,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    gen_certs(args.device_id)
     simule(
         args.host,
         args.port,
+        args.tls,
+        args.tls_file,
         args.data_topic,
         args.config_topic,
         args.result_topic,

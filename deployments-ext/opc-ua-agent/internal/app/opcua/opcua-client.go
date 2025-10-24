@@ -147,7 +147,7 @@ func (c *OPCUAClient) getNodeValue(nodeId *ua.NodeID) (interface{}, error) {
 func (c *OPCUAClient) onData() {
 	for t := range c.ticker.C {
 		var payload map[string]interface{} = make(map[string]interface{})
-		payload["timestamp"] = time.Now().Unix()
+		payload["timestamp"] = time.Now().UnixMicro()
 		c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
 		nodeID := ua.NewStringNodeID(uint16(c.Device.Ns), c.Device.Path)
 

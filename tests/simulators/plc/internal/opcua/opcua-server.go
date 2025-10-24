@@ -8,13 +8,14 @@ import (
 	"github.com/gopcua/opcua/server"
 	"github.com/gopcua/opcua/server/attrs"
 	"github.com/gopcua/opcua/ua"
+	"simulators.plc/config"
 )
 
-func Setup() {
+func Setup(config *config.ContainerConfig) {
 	log.Println("Iniciando o Servidor OPC-UA (gopcua v0.8.0 style)...")
 	srv := server.New(
-		server.EndPoint("0.0.0.0", 4841),
-		server.EndPoint("172.31.212.236", 4841),
+		server.EndPoint("0.0.0.0", config.OpcInternalServerPort),
+		server.EndPoint("172.31.212.236", config.OpcInternalServerPort),
 		server.EnableSecurity(ua.SecurityPolicyURINone, ua.MessageSecurityModeNone),
 	)
 
