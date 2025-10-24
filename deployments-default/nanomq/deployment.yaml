@@ -18,7 +18,7 @@ spec:
       priorityClassName: default-service
       containers:
       - name: nanomq
-        image: emqx/nanomq:latest
+        image: emqx/nanomq:latest-slim
         ports:
         - containerPort: 1883   # Porta MQTT
         - containerPort: 8883   # Porta MQTT com TLS (opcional)
@@ -34,10 +34,16 @@ spec:
         - name: config
           mountPath: /etc/nanomq.conf
           subPath: nanomq.conf
+        - name: cert-volume
+          readOnly: true
+          mountPath: "/certs"
       volumes:
       - name: config
         configMap:
           name: nanomq-config
+      - name: cert-volume
+        secret:
+          secretName: certs-secret
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -47,7 +53,15 @@ metadata:
 data:
   nanomq.conf: |
     log.level = "debug"
-    mqtt.url = "tcp://0.0.0.0:1883"
+    listeners.tcp.enable = true
+    listeners.tcp.bind = "0.0.0.0:1883"
+
+    listeners.ssl.enable = true
+    listeners.ssl.bind = "0.0.0.0:8883"    
+    listeners.ssl.keyfile = "/certs/server.key"
+    listeners.ssl.certfile = "/certs/server.pem"
+    listeners.ssl.cacertfile = "/certs/ca.pem"
+    listeners.ssl.fail_if_no_peer_cert = true
 ---
 apiVersion: v1
 kind: Service

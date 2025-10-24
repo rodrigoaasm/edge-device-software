@@ -14,7 +14,7 @@ resources:
 images:
 - name: emqx/nanomq
   newName: emqx/nanomq
-  newTag: latest
+  newTag: latest-slim
 
 - name: influxdb
   newName: rodrigoasmaia/influxdb
