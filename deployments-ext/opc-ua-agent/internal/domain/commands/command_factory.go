@@ -63,6 +63,7 @@ func (c *CommandFactory) _mapper(command map[string]interface{}) (ICommand, erro
 			int(command["args"].(map[string]interface{})["interval"].(float64)),
 			command["args"].(map[string]interface{})["path"].(string),
 			int(command["args"].(map[string]interface{})["ns"].(float64)),
+			int(command["args"].(map[string]interface{})["securityMode"].(float64)),
 		)
 		if err != nil {
 			return nil, err

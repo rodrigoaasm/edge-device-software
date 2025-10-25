@@ -27,6 +27,8 @@ services:
       DEVICE_ID: ff0001
       DEVICE_PARENT_ID: dd0001
       DEVICE_PARENT_URL: ${DEVICE_PARENT_URL}
+    volumes:
+      - ../../.certs:/certs
       
 networks:
   default:

@@ -11,6 +11,8 @@ type ContainerConfig struct {
 	ParentURL             string
 	CaptFrequecy          int
 	OpcInternalServerPort int
+	Tls                   bool
+	AlternativeDomain     string
 }
 
 func getEnvOrDefault(key, def string) string {
@@ -37,10 +39,16 @@ func NewContainerConfig() *ContainerConfig {
 	}
 	con.ParentId = getEnv("DEVICE_PARENT_ID")
 	con.ParentURL = getEnvOrDefault("DEVICE_PARENT_URL", "opc.tcp://dell-g15:4840")
-	con.OpcInternalServerPort, err = strconv.Atoi(getEnvOrDefault("OPC_INTERNAL_SERVER_PORT", "4840"))
+	con.OpcInternalServerPort, err = strconv.Atoi(getEnvOrDefault("OPC_INTERNAL_SERVER_PORT", "4841"))
 	if err != nil {
 		panic("OPC_INTERNAL_SERVER_PORT must be an integer")
 	}
+
+	con.Tls, err = strconv.ParseBool(getEnvOrDefault("TLS_ENABLE", "false"))
+	if err != nil {
+		panic("TLS must be a boolean")
+	}
+	con.AlternativeDomain = getEnvOrDefault("ALTERNATIVE_DOMAIN", "172.31.212.236")
 
 	return &con
 }

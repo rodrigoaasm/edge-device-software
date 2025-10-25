@@ -1,0 +1,25 @@
+[ req ]
+default_bits       = 2048
+prompt             = no
+default_md         = sha256
+req_extensions     = req_ext
+distinguished_name = dn
+
+[ dn ]
+C  = BR
+ST = MG
+L  = Itajuba
+O  = UNIFEI
+OU = ED-SYSTEM
+CN = opc-ua-agent
+
+[ req_ext ]
+subjectAltName = @alt_names
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+
+[ alt_names ]
+DNS.1 = opc-ua-agent
+IP.1  = 172.31.212.236
+IP.2  = 0.0.0.0

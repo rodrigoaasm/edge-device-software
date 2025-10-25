@@ -2,6 +2,9 @@ package opcua
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/tls"
+	"fmt"
 	"log"
 
 	"github.com/gopcua/opcua/id"
@@ -12,12 +15,45 @@ import (
 )
 
 func Setup(config *config.ContainerConfig) {
-	log.Println("Iniciando o Servidor OPC-UA (gopcua v0.8.0 style)...")
-	srv := server.New(
+	opts := []server.Option{
 		server.EndPoint("0.0.0.0", config.OpcInternalServerPort),
-		server.EndPoint("172.31.212.236", config.OpcInternalServerPort),
-		server.EnableSecurity(ua.SecurityPolicyURINone, ua.MessageSecurityModeNone),
-	)
+		server.EndPoint(config.AlternativeDomain, config.OpcInternalServerPort),
+	}
+
+	if config.Tls {
+		TLSKeyPath := fmt.Sprintf("/certs/%s.key", config.DeviceId)
+		TLSCertPath := fmt.Sprintf("/certs/%s.pem", config.DeviceId)
+
+		log.Println("Fazendo a leitura do certificado TLS: " + TLSKeyPath + " e " + TLSCertPath)
+
+		certObj, err := tls.LoadX509KeyPair(TLSCertPath, TLSKeyPath)
+		if err != nil {
+			log.Fatal("Failed to load certificate:" + err.Error())
+		} else {
+			var ok bool
+			pkey, ok := certObj.PrivateKey.(*rsa.PrivateKey)
+			if !ok {
+				log.Fatalf("Invalid private key")
+			}
+			cert := certObj.Certificate[0]
+			opts = append(opts,
+				server.EnableSecurity(ua.SecurityPolicyURIBasic256Sha256, ua.MessageSecurityModeSignAndEncrypt),
+				server.EnableAuthMode(ua.UserTokenTypeAnonymous),
+				server.PrivateKey(pkey),
+				server.Certificate(cert),
+			)
+		}
+		log.Println("Certificados foram lidos")
+	} else {
+		opts = append(opts, server.EnableSecurity(ua.SecurityPolicyURINone, ua.MessageSecurityModeNone))
+	}
+
+	log.Println("Iniciando o Servidor OPC-UA (gopcua v0.8.0 style)...")
+	log.Println("Server opts.: ")
+	for _, opt := range opts {
+		log.Println(opt)
+	}
+	srv := server.New(opts...)
 
 	root_ns, _ := srv.Namespace(0)
 	root_obj_node := root_ns.Objects()

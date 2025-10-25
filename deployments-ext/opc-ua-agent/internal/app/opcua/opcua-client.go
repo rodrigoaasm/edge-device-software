@@ -2,6 +2,8 @@ package opcua
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/ua"
+	"opc.ua.agent/config"
 	"opc.ua.agent/internal/domain/entities"
 	domain_interfaces "opc.ua.agent/internal/domain/interfaces"
 	"opc.ua.agent/internal/utils"
@@ -26,15 +29,21 @@ type OPCUAClient struct {
 	ticker *time.Ticker
 	log    logr.Logger
 	client *opcua.Client
+	config *config.ContainerConfig
 }
 
-func NewOPCUAClient(device entities.Device, log logr.Logger, outputDriver domain_interfaces.IOutputDriver) *OPCUAClient {
+func NewOPCUAClient(device entities.Device, log logr.Logger, outputDriver domain_interfaces.IOutputDriver, config *config.ContainerConfig) *OPCUAClient {
 	return &OPCUAClient{
 		Device: device,
+		config: config,
 
 		output: outputDriver,
 		log:    log,
 	}
+}
+
+func (c *OPCUAClient) getCerts() (*rsa.PrivateKey, []byte, error) {
+	return nil, nil, nil
 }
 
 func (c *OPCUAClient) Connect() error {
@@ -49,12 +58,39 @@ func (c *OPCUAClient) Connect() error {
 		c.log.Info(ep.EndpointURL, ep.SecurityPolicyURI, ep.SecurityMode)
 	}
 
+	opts := []opcua.Option{
+		opcua.SecurityMode(c.Device.SecurityMode),
+	}
+	if c.Device.SecurityMode >= 2 {
+		TLSKeyPath := fmt.Sprintf("%s/opc-ua-agent.key", c.config.CertsDir)
+		TLSCertPath := fmt.Sprintf("%s/opc-ua-agent.pem", c.config.CertsDir)
+		c.log.Info("Loading certificates from " + TLSCertPath + " and " + TLSKeyPath)
+
+		certObj, err := tls.LoadX509KeyPair(TLSCertPath, TLSKeyPath)
+		if err != nil {
+			return err
+		} else {
+			var ok bool
+			pkey, ok := certObj.PrivateKey.(*rsa.PrivateKey)
+			if !ok {
+				c.log.Info("Invalid private key")
+			}
+
+			cert := certObj.Certificate[0]
+			opts = append(opts,
+				opcua.SecurityPolicy(ua.SecurityPolicyURIBasic256Sha256),
+				opcua.PrivateKey(pkey),
+				opcua.Certificate(cert),
+			)
+		}
+	}
+
 	c.log.Info("Connecting to OPC UA endpoint: " + c.Device.Url)
-	if c.client, err = opcua.NewClient(endpoint, opcua.SecurityMode(ua.MessageSecurityModeNone)); err != nil {
+	if c.client, err = opcua.NewClient(endpoint, opts...); err != nil {
 		return err
 	}
 	if err = c.client.Connect(context.Background()); err != nil {
-		return err
+		panic(err)
 	}
 	c.log.Info("OPC UA endpoint connected " + c.Device.Url)
 

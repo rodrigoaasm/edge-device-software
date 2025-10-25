@@ -9,6 +9,7 @@ type ContainerConfig struct {
 	BrokerUrl     string
 	DeviceId      string
 	LogLevel      string
+	CertsDir      string
 }
 
 func getEnvOrDefault(key, def string) string {
@@ -33,6 +34,7 @@ func NewContainerConfig() *ContainerConfig {
 	con.DeviceId = getEnv("DEVICE_ID")
 	con.LogLevel = getEnvOrDefault("LOG_LEVEL", "info")
 	con.BrokerUrl = getEnvOrDefault("BROKER_URL", "tcp://nanomq:1883")
+	con.CertsDir = getEnvOrDefault("CERTS_DIR", "/certs")
 
 	return &con
 }

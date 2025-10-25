@@ -47,7 +47,7 @@ func main() {
 	outputClientsManagerService := services.NewOutputClientsManagerService(log)
 
 	// factory
-	opcDriverFactory := app_opcua.NewOPCUAClientFactory(log)
+	opcDriverFactory := app_opcua.NewOPCUAClientFactory(log, containerConfig)
 	commandFactory := domain_commands.NewCommandFactory(
 		ctx,
 		opcDriverFactory,

@@ -6,8 +6,9 @@ services:
     command: ["tail", "-f", "/dev/null"]
     volumes:
       - .:/app/opc-ua-agent
+      - ./../../.certs:/certs
     environment:
-      CONSUMER_TOPIC: "device/config"
+      CONSUMER_TOPIC: "device/config/opc"
       DEVICE_ID: "abc123"
       LOG_LEVEL: "debug"
       BROKER_URL: "tcp://172.31.212.236:31883"
