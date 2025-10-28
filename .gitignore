@@ -1,5 +1,6 @@
 .images
 **/media
 .certs
+**/.env
 
 __debug_bin*

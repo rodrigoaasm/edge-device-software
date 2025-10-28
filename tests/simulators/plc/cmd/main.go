@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 	"simulators.plc/config"
 	"simulators.plc/internal/opcua"
+	plc_runtime "simulators.plc/internal/runtime"
 )
 
 func main() {
@@ -27,18 +27,14 @@ func main() {
 		return
 	}
 
-	/*linClient := opcua.NewOPCUAClient(log, config.ParentId, config.ParentURL)
+	linClient := opcua.NewOPCUAClient(log, config.ParentId, config.ParentURL)
 	if err := linClient.Connect(); err != nil {
 		log.Error(err, "Failed to connect to OPC UA")
 		return
 	}
 
 	plcRunner := plc_runtime.NewPLCRunner(config.CaptFrequecy)
-	plcRunner.Run(selfClient, linClient, log)*/
-
-	for {
-		time.Sleep(time.Second * 1)
-	}
+	plcRunner.Run(selfClient, linClient, log)
 }
 
 // }

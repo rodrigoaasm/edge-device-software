@@ -17,7 +17,7 @@ RUN go build -a -o plc cmd/main.go
 
 FROM alpine:3.21
 WORKDIR /workspace
-COPY --from=builder plc plc
+COPY --from=builder /workspace/plc plc
 COPY ./entrypoint.sh entrypoint.sh
 RUN chmod +x entrypoint.sh
 

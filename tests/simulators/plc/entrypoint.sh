@@ -1,3 +1,4 @@
+#!/bin/sh
 if [ "$TLS_ENABLE" = "true" ]; then  
   cat > opc-ua-agent.cnf <<EOF
 [ req ]

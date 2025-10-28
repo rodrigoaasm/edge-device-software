@@ -49,8 +49,10 @@ def make_on_connect(trigger_topic):
 
     return on_connect
 
-def on_disconnect(client, userdata, rc):
+def on_disconnect(client, userdata, rc): 
+    global STOP_LOOP   
     print("Desconectado do broker (rc=", rc, ")")
+    STOP_LOOP = True
 
 def make_on_message(trigger_topic, data_topic, result_topic, device_id, s3_client, s3_bucket):
     def on_message(client, userdata, msg):
@@ -98,8 +100,8 @@ def simule(host, port, tls, tls_files, data_topic, config_topic, result_topic, d
     if tls:
         client.tls_set(
             ca_certs=f"{tls_files}/ca.pem",          
-            certfile=f"{tls_files}/device.pem",      
-            keyfile=f"{tls_files}/device.key",
+            certfile=f"{tls_files}/{device_id}.pem",      
+            keyfile=f"{tls_files}/{device_id}.key",
             tls_version=mqtt.ssl.PROTOCOL_TLSv1_2,
             cert_reqs=ssl.CERT_NONE
         )
@@ -135,7 +137,7 @@ def run_openssl(command, description):
     print(f"{description}...")
     try:
         subprocess.run(command, check=True, shell=True, 
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print("✅ SUCESSO!")
     except subprocess.CalledProcessError as e:
         print(f"❌ Comando: {e.cmd}. Erro: {e.stderr.decode()}")

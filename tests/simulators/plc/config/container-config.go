@@ -32,13 +32,13 @@ func getEnv(key string) string {
 func NewContainerConfig() *ContainerConfig {
 	var err error
 	con := ContainerConfig{}
-	con.DeviceId = getEnv("DEVICE_ID")
+	con.DeviceId = getEnvOrDefault("DEVICE_ID", "cc0001")
 	con.CaptFrequecy, err = strconv.Atoi(getEnvOrDefault("CAPT_FREQUENCY", "100"))
 	if err != nil {
 		panic("CAPT_FREQUENCY must be an integer")
 	}
-	con.ParentId = getEnv("DEVICE_PARENT_ID")
-	con.ParentURL = getEnvOrDefault("DEVICE_PARENT_URL", "opc.tcp://dell-g15:4840")
+	con.ParentId = getEnvOrDefault("DEVICE_PARENT_ID", "dd0001")
+	con.ParentURL = getEnvOrDefault("DEVICE_PARENT_URL", "opc.tcp://192.168.0.5:4840")
 	con.OpcInternalServerPort, err = strconv.Atoi(getEnvOrDefault("OPC_INTERNAL_SERVER_PORT", "4841"))
 	if err != nil {
 		panic("OPC_INTERNAL_SERVER_PORT must be an integer")

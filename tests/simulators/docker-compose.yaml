@@ -23,7 +23,7 @@ services:
     ports:
       - "4841:4841"
     environment:
-      CAPT_FREQUENCY: 10
+      CAPT_FREQUENCY: 100
       DEVICE_ID: ff0001
       DEVICE_PARENT_ID: dd0001
       DEVICE_PARENT_URL: ${DEVICE_PARENT_URL}
