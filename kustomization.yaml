@@ -18,19 +18,19 @@ images:
 
 - name: influxdb
   newName: rodrigoasmaia/influxdb
-  newTag: 0.3.0
+  newTag: 0.7.0
 
 - name: telegraf-agg
   newName: rodrigoasmaia/telegraf-agg
-  newTag: 0.3.0
+  newTag: 0.7.0
 
 - name: telegraf-bridge
   newName: rodrigoasmaia/telegraf-bridge
-  newTag: 0.4.0
+  newTag: 0.7.0
 
 - name: ed-operator
   newName: rodrigoasmaia/ed-operator
-  newTag: 0.5.2
+  newTag: 0.7.0
 
 - name: minio
   newName: quay.io/minio/minio

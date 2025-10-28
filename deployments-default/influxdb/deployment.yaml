@@ -70,6 +70,7 @@ metadata:
   name: influxdb-data-pvc
   namespace: ed-system
 spec:
+  storageClassName: ""
   volumeName: influxdb-data
   accessModes:
     - ReadWriteOnce
