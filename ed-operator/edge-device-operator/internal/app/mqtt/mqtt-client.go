@@ -18,6 +18,7 @@ import (
 
 type MQTTClient struct {
 	mqttClient     mqtt.Client
+	clientId       string
 	log            logr.Logger
 	commandFactory *domain_commands.CommandFactory
 
@@ -27,21 +28,39 @@ type MQTTClient struct {
 func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *config.ContainerConfig, ctx context.Context) *MQTTClient {
 	log := log.FromContext(ctx)
 	log.Info("Init MQTT client...")
-	opts := mqtt.NewClientOptions().AddBroker(config.BrokerUrl)
-
 	log.Info("Generating client id...")
 	rand.Seed(time.Now().UnixNano())
-	opts.SetClientID(fmt.Sprintf("opc-ua-agent-%d", rand.Intn(10000)))
+	clientId := fmt.Sprintf("ed-operator-%d", rand.Intn(10000))
 	log.Info("Client id generated and sotted")
 
-	mqttClient := mqtt.NewClient(opts)
-
-	return &MQTTClient{
-		mqttClient:     mqttClient,
+	client := MQTTClient{
 		log:            log,
 		commandFactory: commandFactory,
 		config:         config,
+		clientId:       clientId,
 	}
+
+	opts := mqtt.NewClientOptions().
+		AddBroker(config.BrokerUrl).
+		SetAutoReconnect(true).
+		SetOnConnectHandler(client.onConnect).
+		SetConnectionLostHandler(client.onConnectLost).
+		SetMaxReconnectInterval(30 * time.Second).
+		SetCleanSession(true).
+		SetClientID(clientId)
+
+	client.mqttClient = mqtt.NewClient(opts)
+	return &client
+}
+
+func (c *MQTTClient) onConnectLost(client mqtt.Client, err error) {
+	c.log.Info("Broker connection lost. " + err.Error() + ". Reconnecting...")
+}
+
+func (c *MQTTClient) onConnect(client mqtt.Client) {
+	c.log.Info("Broker connection established. Subscribing in topics...")
+	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, c.HandlerMessage)
+	c.log.Info("Subscribed in topics")
 }
 
 func (c *MQTTClient) HandlerMessage(q mqtt.Client, m mqtt.Message) {
@@ -65,7 +84,7 @@ func (c *MQTTClient) HandlerMessage(q mqtt.Client, m mqtt.Message) {
 			if command, err := c.commandFactory.Make(commandDTO); err == nil {
 				data, cerr := command.Execute()
 				if cerr != nil {
-					c.PublishResult(commandDTO.CorrelationId, false, "Failed to execute command."+cerr.Error(), data)
+					c.PublishResult(commandDTO.CorrelationId, false, "Failed to execute command. "+cerr.Error(), data)
 					continue
 				}
 

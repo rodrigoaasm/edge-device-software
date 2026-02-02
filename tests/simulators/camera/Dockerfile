@@ -4,9 +4,10 @@ RUN apt update
 RUN apt install -y openssl
 
 WORKDIR /app
-COPY ./device.py ./device.py
 COPY ./requirements.txt ./requirements.txt
-COPY ./media ./media
 RUN pip install -r requirements.txt
+
+COPY ./device.py ./device.py
+COPY ./media ./media
 
 CMD ["python", "-u", "device.py" ]

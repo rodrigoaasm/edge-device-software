@@ -30,23 +30,39 @@ type MQTTClient struct {
 
 func NewMQTTClient(commandFactory *domain_commands.CommandFactory, config *config.ContainerConfig, log logr.Logger) *MQTTClient {
 	log.Info("Init MQTT client...")
-	opts := mqtt.NewClientOptions().AddBroker(config.BrokerUrl)
-
 	log.Info("Generating client id...")
 	rand.Seed(time.Now().UnixNano())
 	clientId := fmt.Sprintf("opc-ua-agent-%d", rand.Intn(10000))
-	opts.SetClientID(clientId)
 	log.Info("Client id generated and sotted")
 
-	mqttClient := mqtt.NewClient(opts)
-
-	return &MQTTClient{
-		mqttClient:     mqttClient,
+	client := MQTTClient{
 		log:            log,
 		commandFactory: commandFactory,
 		config:         config,
 		clientId:       clientId,
 	}
+
+	opts := mqtt.NewClientOptions().
+		AddBroker(config.BrokerUrl).
+		SetAutoReconnect(true).
+		SetOnConnectHandler(client.onConnect).
+		SetConnectionLostHandler(client.onConnectLost).
+		SetMaxReconnectInterval(30 * time.Second).
+		SetCleanSession(true).
+		SetClientID(clientId)
+
+	client.mqttClient = mqtt.NewClient(opts)
+	return &client
+}
+
+func (c *MQTTClient) onConnectLost(client mqtt.Client, err error) {
+	c.log.Info("Broker connection lost. " + err.Error() + ". Reconnecting...")
+}
+
+func (c *MQTTClient) onConnect(client mqtt.Client) {
+	c.log.Info("Broker connection established. Subscribing in topics...")
+	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, c.handlerMessage)
+	c.log.Info("Subscribed in topics")
 }
 
 func (c *MQTTClient) makeCmdError(correlationId string, message string) *CommandError {
@@ -134,9 +150,6 @@ func (c *MQTTClient) Connect() error {
 		c.log.Error(token.Error(), "Failed to connect MQTT client")
 		panic(token.Error())
 	}
-
-	c.log.Info("Subscribing MQTT client...")
-	c.mqttClient.Subscribe(c.config.ConsumerTopic, 0, c.handlerMessage)
 	return nil
 }
 
@@ -145,7 +158,7 @@ func (c *MQTTClient) publish(topic string, payload []byte) error {
 		c.log.Error(token.Error(), "Failed to publish result in topic"+topic)
 		return nil
 	}
-	c.log.Info("Message to " + topic + " published")
+	//c.log.Info("Message to " + topic + " published")
 	return nil
 }
 
@@ -184,7 +197,7 @@ func (c *MQTTClient) PublishResult(CorrelationId string, Success bool, Message s
 }
 
 func (c *MQTTClient) PublishData(deviceId string, message interface{}) error {
-	c.log.Info("Publishing data in " + deviceId)
+	// c.log.Info("Publishing data in " + deviceId)
 	message.(map[string]interface{})["deviceId"] = deviceId
 	payload, err := json.MarshalIndent(message, "", "  ")
 	if err != nil {

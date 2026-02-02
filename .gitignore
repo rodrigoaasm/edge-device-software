@@ -2,5 +2,6 @@
 **/media
 .certs
 **/.env
+.data
 
 __debug_bin*

@@ -22,7 +22,13 @@ spec:
         image: telegraf-bridge
         env:
           - name: DEVICE_ID
-            value: "abc123"    
+            value: "abc123"
+          - name: DATA_COLLECTION_INTERVAL
+            value: "300ms"
+          - name: FLUSH_INTERVAL
+            value: "200ms"
+          - name: BATCH_SIZE
+            value: "100"
         resources:
           limits:
             memory: "256Mi"

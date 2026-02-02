@@ -25,11 +25,13 @@ var (
 type OPCUAClient struct {
 	Device entities.Device
 
-	output domain_interfaces.IOutputDriver
-	ticker *time.Ticker
-	log    logr.Logger
-	client *opcua.Client
-	config *config.ContainerConfig
+	output            domain_interfaces.IOutputDriver
+	ticker            *time.Ticker
+	log               logr.Logger
+	client            *opcua.Client
+	config            *config.ContainerConfig
+	cacheBrowseResult []*ua.ReadValueID
+	cacheTime         time.Time
 }
 
 func NewOPCUAClient(device entities.Device, log logr.Logger, outputDriver domain_interfaces.IOutputDriver, config *config.ContainerConfig) *OPCUAClient {
@@ -181,45 +183,54 @@ func (c *OPCUAClient) getNodeValue(nodeId *ua.NodeID) (interface{}, error) {
 }
 
 func (c *OPCUAClient) onData() {
-	for t := range c.ticker.C {
+	for _ = range c.ticker.C {
 		var payload map[string]interface{} = make(map[string]interface{})
 		payload["timestamp"] = time.Now().UnixMicro()
-		c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
-		nodeID := ua.NewStringNodeID(uint16(c.Device.Ns), c.Device.Path)
+		// c.log.Info("Polling data for device: " + c.Device.DeviceId + " at " + t.String())
 
-		c.log.Info(fmt.Sprintf("Getting all vars in NodeID=%s...", nodeID.String()))
-		browseResp, err := c.getNodeList(nodeID)
-		if err != nil {
-			c.log.Error(err, "Erro no Browse:")
-			return
-		}
+		if c.cacheTime.Second()+5 < time.Now().Second() {
+			nodeID := ua.NewStringNodeID(uint16(c.Device.Ns), c.Device.Path)
+			browseResp, err := c.getNodeList(nodeID)
+			if err != nil {
+				c.log.Error(err, "Erro no Browse:")
+			}
 
-		c.log.Info(fmt.Sprintf("Found %d nodes", len(browseResp.Results)))
-		for _, result := range browseResp.Results {
-			c.log.Info(fmt.Sprintf("Found %d references", len(result.References)))
-			for _, ref := range result.References {
-				if strings.HasPrefix(ref.DisplayName.Text, "opc_") {
-					c.log.Info(fmt.Sprintf("Getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n",
-						ref.NodeID.String(),
-						ref.BrowseName.Name,
-						ref.DisplayName.Text,
-					))
-					if value, err := c.getNodeValue(ref.NodeID.NodeID); err == nil {
-						attrKey := strings.TrimPrefix(ref.DisplayName.Text, "opc_")
-						payload[attrKey] = value
-					} else {
-						c.log.Error(err, "Unable to getting value from NodeID=%s, BrowseName=%s, DisplayName=%s\n")
+			var nodesToRead []*ua.ReadValueID
+			c.log.Info(fmt.Sprintf("Found %d nodes", len(browseResp.Results)))
+			for _, result := range browseResp.Results {
+				c.log.Info(fmt.Sprintf("Found %d references", len(result.References)))
+				for _, ref := range result.References {
+					if strings.HasPrefix(ref.DisplayName.Text, "opc_") {
+						nodesToRead = append(nodesToRead, &ua.ReadValueID{
+							NodeID:      ref.NodeID.NodeID,
+							AttributeID: ua.AttributeIDValue,
+						})
 					}
 				}
+			}
+			c.cacheBrowseResult = nodesToRead
+		}
+
+		if len(c.cacheBrowseResult) > 0 {
+			resp, err := c.client.Read(context.Background(), &ua.ReadRequest{NodesToRead: c.cacheBrowseResult})
+			if err != nil {
+				c.log.Error(err, "Erro no Read:")
+			}
+
+			for i, result := range resp.Results {
+				node := c.cacheBrowseResult[i].NodeID.String()
+				parts := strings.Split(node, "opc_") //strings.TrimPrefix(node,
+				payload[parts[1]] = result.Value.Value()
 			}
 		}
 
 		if len(payload) > 1 {
-			c.log.Info("Publishing data in mqtt broker...")
+			payload["timestamp_send_mqtt"] = time.Now().UnixMicro()
+			// c.log.Info("Publishing data in mqtt broker...")
 			if err := c.output.PublishData(c.Device.DeviceId, payload); err != nil {
 				c.log.Error(err, "Failed to publish data in mqtt broker")
 			}
-			c.log.Info("Data published in mqtt broker")
+			// c.log.Info("Data published in mqtt broker")
 		}
 	}
 }

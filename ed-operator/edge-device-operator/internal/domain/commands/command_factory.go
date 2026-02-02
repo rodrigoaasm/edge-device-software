@@ -10,6 +10,7 @@ import (
 	"ed-operator/internal/domain/dto"
 	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
+	"ed-operator/internal/utils"
 	"errors"
 )
 
@@ -24,7 +25,23 @@ func NewCommandFactory(ctx context.Context, drc interfaces.IReconcilerClient) *C
 
 func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 	var microservice *entities.Microservice
-	if command.Command == "deploy" || command.Command == "update" {
+	if command.Command == "deploy" {
+		microservice = entities.NewMicroservice(
+			command.Args.Name,
+			command.Args.Image,
+			command.Args.Env,
+			utils.GetValueOrDefault(command.Args.PriorityProfile, entities.PRIORITY_PROFILE_SIMPLE_SERVICE),
+			command.Args.Port,
+			command.Args.InternalPort,
+			command.Args.ExternalPort,
+			utils.GetValueOrDefault(command.Args.RequestMemory, 128),
+			utils.GetValueOrDefault(command.Args.LimitMemory, 256),
+			utils.GetValueOrDefault(command.Args.RequestCPU, 100),
+			utils.GetValueOrDefault(command.Args.LimitCPU, 500),
+		)
+	}
+
+	if command.Command == "update" {
 		microservice = entities.NewMicroservice(
 			command.Args.Name,
 			command.Args.Image,

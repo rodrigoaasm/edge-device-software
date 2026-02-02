@@ -1,7 +1,5 @@
 package entities
 
-import "ed-operator/internal/utils"
-
 type Env map[string]string
 type Microservice struct {
 	Name            string
@@ -34,14 +32,14 @@ func NewMicroservice(
 		Name:            name,
 		Image:           image,
 		Env:             env,
-		PriorityProfile: utils.GetValueOrDefault(priorityProfile, PRIORITY_PROFILE_SIMPLE_SERVICE),
+		PriorityProfile: priorityProfile,
 		Port:            port,
 		InternalPort:    internalPort,
 		ExternalPort:    externalPort,
-		RequestMemory:   utils.GetValueOrDefault(requestMemory, 128),
-		LimitMemory:     utils.GetValueOrDefault(limitMemory, 256),
-		RequestCPU:      utils.GetValueOrDefault(requestCPU, 100),
-		LimitCPU:        utils.GetValueOrDefault(limitCPU, 500),
+		RequestMemory:   requestMemory,
+		LimitMemory:     limitMemory,
+		RequestCPU:      requestCPU,
+		LimitCPU:        limitCPU,
 	}
 }
 

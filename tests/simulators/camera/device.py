@@ -32,6 +32,7 @@ def make_payload(device_id, filepath ):
     })
 
 STOP_LOOP = False
+last_trigger = False
 
 def on_exit(sig, frame):  
     print ("Recebido sinal de encerramento")
@@ -54,8 +55,10 @@ def on_disconnect(client, userdata, rc):
     print("Desconectado do broker (rc=", rc, ")")
     STOP_LOOP = True
 
-def make_on_message(trigger_topic, data_topic, result_topic, device_id, s3_client, s3_bucket):
+def make_on_message(trigger_topic, data_topic, result_topic, device_id, s3_client, s3_bucket):    
     def on_message(client, userdata, msg):
+        global last_trigger
+        data = None
         try:
             payload_str = msg.payload.decode()
             print(f"📥 Mensagem recebida em {msg.topic}: {payload_str}")
@@ -64,25 +67,36 @@ def make_on_message(trigger_topic, data_topic, result_topic, device_id, s3_clien
             if timestamp_ref == 0:
                 print("❌ Mensagem sem timestamp")
                 return
-        
-            if msg.topic == trigger_topic:                      
+
+            if msg.topic == trigger_topic:
                 payload = make_ack_payload(device_id, timestamp_ref)
                 print(f"🚀 Publicando Ack em {result_topic}: {payload}")
-                client.publish(result_topic, payload, qos=0, retain=0)            
+                client.publish(result_topic, payload, qos=0, retain=0)  
+            else:
+                return           
         except Exception as e:
             print("⚠️ Erro ao processar mensagem:", e)
+            return
 
-        try:
-            print(f"🚀 Fazendo upload da imagem... ")
-            now = int(datetime.now().timestamp() * 1000000)
-            image_path = f"{device_id}-{now}.png"
-            s3_client.upload_file("media/image_test.png", s3_bucket, image_path)
-            print(f"✅ Imagem enviada para {image_path}. Publicando metadata em {data_topic}...")
-            payload = make_payload(device_id, image_path)
-            client.publish(data_topic, payload, qos=0, retain=0)
-            print(f"✅ Metadata enviada para {data_topic}")
-        except Exception as e:
-            print(f"❌ Erro inesperado: {e}")
+        actual_trigger = data.get("analysis_sensor_start_1_f_")
+        if actual_trigger == None:
+            return
+            
+        if (not last_trigger) and actual_trigger:
+            print("Realizando captura da imagem")
+            try:
+                print(f"🚀 Fazendo upload da imagem... ")
+                now = int(datetime.now().timestamp() * 1000000)
+                image_path = f"{device_id}-{now}.png"
+                s3_client.upload_file("media/image_test.png", s3_bucket, image_path)
+                print(f"✅ Imagem enviada para {image_path}. Publicando metadata em {data_topic}...")
+                payload = make_payload(device_id, image_path)
+                client.publish(data_topic, payload, qos=0, retain=0)
+                print(f"✅ Metadata enviada para {data_topic}")
+            except Exception as e:
+                print(f"❌ Erro inesperado: {e}")
+
+        last_trigger = actual_trigger
 
     return on_message
 
@@ -95,7 +109,6 @@ def simule(host, port, tls, tls_files, data_topic, config_topic, result_topic, d
         region_name=s3_region 
     )
 
-    trigger_topic = f"{config_topic}/{device_id}"
     client = mqtt.Client()
     if tls:
         client.tls_set(
@@ -105,10 +118,10 @@ def simule(host, port, tls, tls_files, data_topic, config_topic, result_topic, d
             tls_version=mqtt.ssl.PROTOCOL_TLSv1_2,
             cert_reqs=ssl.CERT_NONE
         )
-    client.on_connect = make_on_connect(trigger_topic)
+    client.on_connect = make_on_connect(config_topic)
     client.on_disconnect = on_disconnect
     client.on_message = make_on_message(
-        trigger_topic,
+        config_topic,
         f"{data_topic}/{device_id}",
         f"{result_topic}",
         device_id,
@@ -155,7 +168,7 @@ if __name__ == "__main__":
     default_mqtt_tls_file = os.environ.get("DEVICE_PY_BROKER_TLS_FILE", "/certs")
     default_mqtt_data_topic = os.environ.get("DEVICE_PY_DATA_TOPIC", "device/data")
     default_mqtt_result_topic = os.environ.get("DEVICE_PY_RESULT_TOPIC", "device/results")
-    default_mqtt_config_topic = os.environ.get("DEVICE_PY_CONFIG_TOPIC", "device/config")
+    default_mqtt_config_topic = os.environ.get("DEVICE_PY_CONFIG_TOPIC", "device/data/dd0001")
     default_device_id = os.environ.get("DEVICE_PY_DEVICE_ID", "cc0001")
     default_interval = float(os.environ.get("DEVICE_PY_DATA_INTERVAL", 1000))
     default_s3_endpoint = os.environ.get("DEVICE_PY_AWS_S3_ENDPOINT")
