@@ -1,116 +1,139 @@
 # EDGE-DEVICE-SOFTWARE
 
-## Build das imagens
+## Building Images
 
-Nesse repositório você encontrará os arquivos necessários para construir as imagens do Edge-Device-Software e importá-las para dentro do cluster k3s. Para fazer build e importação de uma única imagem utilize:
-
-```sh
-./build.sh <nome do serviço> <versão>
-```
-Para realizar o build e a importação de todas as imagens dos serviços padrão do sistema automaticamente, utilize:
+In this repository, you will find the necessary files to build the Edge-Device-Software images and import them into the k3s cluster. To build and import a single image, use:
 
 ```sh
-./build-all.sh <versão>
+./build.sh <service-name> <version>
 ```
 
-## Instalação e desinstalação do ed-software
+To automatically build and import all standard system service images, use:
 
-Para instalar o ed-software no cluster k3s, utilize:
+```sh
+./build-all.sh <version>
+```
+
+---
+
+## Installing and Uninstalling ed-software
+
+To install ed-software in the k3s cluster, run:
 
 ```sh
 ./up.sh
 ```
 
-Para derrubar o cluster mantendo os dados do ed-software, utilize:
+To shut down the cluster while preserving ed-software data, use:
 
 ```sh
 ./down.sh
 ```
 
-Para desinstalação completa do ed-software, utilize:
+For a complete removal of ed-software, including all data, run:
 
-```sh 
+```sh
 ./down.sh -v
 ```
 
-## Comandos do sistema
+---
 
-A mensagem enviada a um dispositivo deve seguir a seguinte estrutura:
+## System Commands
+
+Messages sent to a device must follow the structure below:
 
 ```ts
 {
-  deviceId: string, // Um identificador único para o dispositivo alvo.
-  correlationId: string, // Um ID único para correlacionar a resposta a esta mensagem específica.
-  commands: Array<{ // Uma lista de comandos a serem executados no dispositivo.
-    correlationId: string, // Um ID único para correlacionar a resposta a este comando específico.
-    command: string, // O tipo de comando a ser executado (ex: "deploy", "update", "undeploy").
-    args: any // Argumentos específicos necessários para o comando.
+  deviceId: string, // Unique identifier of the target device.
+  correlationId: string, // Unique ID to correlate the response to this specific message.
+  commands: Array<{ // List of commands to be executed on the device.
+    correlationId: string, // Unique ID to correlate the response to this specific command.
+    command: string, // Type of command (e.g., "deploy", "update", "undeploy").
+    args: any // Command-specific arguments.
   }>
 }
 ```
 
-Cada objeto dentro do array commands representa uma única instrução para o dispositivo, permitindo o envio de múltiplos comandos em uma única mensagem.
+Each object inside the `commands` array represents a single instruction for the device, allowing multiple commands to be sent in a single message.
 
-### Deploy or update:
+---
 
-Este comando é usado para implantar um novo serviço ou atualizar um serviço existente no dispositivo
+### Deploy or Update
 
-```ts
-{
-  correlationId: string, // ID de correlação para esta operação de deploy/update.
-  command: "deploy" | "update", // Indica se é uma implantação inicial ("deploy") ou uma atualização ("update").
-  args: {
-    name: string, // O nome do serviço a ser implantado ou atualizado.
-    image: string, // A imagem do contêiner a ser usada para o serviço (ex: "my-app:1.0.0").
-    env?: Map<string,string>, // Um mapa de variáveis de ambiente a serem configuradas para o serviço.
-    priorityProfile?: string | number, // O nome de profile padrão ou número para a criação de um profile especifico (padrão: single-service).
-    port?: number, // A porta principal onde o serviço será exposto e acessível.
-    internalPort?: number, // A porta usada para comunicação interna dentro do cluster.
-    externalPort?: number // A porta que as chamadas externas ao dispositivo devem usar para acessar o serviço.
-    requestMemory?: number // Quantidade memória necessária em MB (padrão: 128).
-    limitMemory?: number // Limite de memória em MB (Padrão: 256).
-    requestCPU?: number // Quantidade de núcleos de CPU necessário em Milli-núcleos (Padrão: 200).
-    limitCPU?: number // Limite de núcleos de CPU em Milli-núcleos (Padrão: 500).
-  }
-}
-```
-Ao usar deploy, o sistema criará e iniciará um novo serviço com o name e image especificados, aplicando as env variáveis de ambiente. Se o comando for update, o serviço existente com o name será atualizado com a nova image e env configurações, geralmente resultando em uma reinicialização do serviço.
-
-O campo opcional priorityProfile permite definir o perfil de prioridade de execução do serviço. Se um nome de perfil padrão ("iot-agent" ou "single-service") for fornecido, o serviço utilizará as configurações predefinidas para esse perfil. Alternativamente, um número entre 2 e 1000 pode ser enviado para criar um perfil de prioridade específico para este serviço. Alguns serviços tem seus nome reservados ("operator", "telegraf-agg" e "telegraf-bridge") por serem padrão do sistema, para esses serviços o campo priorityProfile não é aplicável.
-
-As propriedades port, internalPort e externalPort definem como o serviço será acessível: port é a principal porta de comunicação; internalPort é para chamadas de outros serviços dentro do cluster; e externalPort é para requisições que vêm de fora do dispositivo.
-
-### Undeploy Command:
-
-Este comando é usado para remover um serviço existente de um dispositivo.
+This command is used to deploy a new service or update an existing service on the device.
 
 ```ts
 {
-  correlationId: string, // ID de correlação para esta operação de undeploy.
-  command: "undeploy", // O tipo de comando, sempre "undeploy" para esta operação.
+  correlationId: string, // Correlation ID for this deploy/update operation.
+  command: "deploy" | "update", // Indicates initial deployment ("deploy") or update ("update").
   args: {
-    name: string // O nome do serviço a ser removido do dispositivo.
-    image: string // A imagem do contêiner associada ao serviço a ser removido.
+    name: string, // Name of the service to be deployed or updated.
+    image: string, // Container image to be used (e.g., "my-app:1.0.0").
+    env?: Map<string,string>, // Map of environment variables.
+    priorityProfile?: string | number, // Default profile name or numeric value (default: single-service).
+    port?: number, // Main exposed service port.
+    internalPort?: number, // Port for internal cluster communication.
+    externalPort?: number // Port for external access.
+    requestMemory?: number // Requested memory in MB (default: 128).
+    limitMemory?: number // Memory limit in MB (default: 256).
+    requestCPU?: number // Requested CPU in millicores (default: 200).
+    limitCPU?: number // CPU limit in millicores (default: 500).
   }
 }
 ```
-Ao receber este comando, o dispositivo encerrará e removerá o serviço identificado pelo name e image correspondentes, liberando os recursos que ele estava utilizando.
 
-Ao adicionar novos serviços é possível determinar comandos especifico para eles.
+When using `deploy`, the system creates and starts a new service with the specified `name` and `image`, applying the environment variables. When using `update`, the existing service is updated with the new `image` and `env` settings, usually resulting in a service restart.
 
-## Comandos Básicos do Kubenetes
+The optional `priorityProfile` field defines the execution priority profile. If a default profile name (`"iot-agent"` or `"single-service"`) is provided, predefined settings are applied. Alternatively, a value between 2 and 1000 can be used to create a custom priority profile.
+
+Some services have reserved names (`"operator"`, `"telegraf-agg"`, and `"telegraf-bridge"`) because they are system defaults. For these services, the `priorityProfile` field is not applicable.
+
+The `port`, `internalPort`, and `externalPort` properties define how the service is exposed:
+
+* `port`: main communication port;
+* `internalPort`: for inter-service communication inside the cluster;
+* `externalPort`: for requests coming from outside the device.
+
+---
+
+### Undeploy Command
+
+This command is used to remove an existing service from a device.
+
+```ts
+{
+  correlationId: string, // Correlation ID for this undeploy operation.
+  command: "undeploy", // Command type, always "undeploy".
+  args: {
+    name: string, // Name of the service to be removed.
+    image: string // Container image associated with the service.
+  }
+}
+```
+
+When this command is received, the device stops and removes the service identified by `name` and `image`, freeing the resources it was using.
+
+When adding new services, it is possible to define specific commands for them.
+
+---
+
+## Basic Kubernetes Commands
 
 ```sh
-## Consumo de recurso do Cluster
+## Cluster resource usage
 kubectl top nodes
 
-## Consumo de recurso dos Pods
+## Pod resource usage
 kubectl top pods -A
 ```
 
-## Ambiente de Preempção
+---
 
-Para facilitar os testes de preempção por memoria o ideal é manter um quantidade de memória para o S.O e para os sistemas básicos do Kubernetes para garantir o funcionamento básico do cluster. Para reserva memoria o arquivo `/etc/systemd/system/k3s.service` deve ser modificado para que o executável do k3s receba os argumentos abaixo.
+## Preemption Environment
+
+To facilitate memory preemption testing, it is recommended to reserve part of the system memory for the operating system and basic Kubernetes services, ensuring minimum cluster stability.
+
+To reserve memory, edit the file `/etc/systemd/system/k3s.service` and add the following arguments to the k3s executable:
 
 ```sh
 --kubelet-arg="system-reserved=memory=1Gi" \
