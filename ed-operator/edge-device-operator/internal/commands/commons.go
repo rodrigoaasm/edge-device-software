@@ -1,4 +1,4 @@
-package command_commons
+package commands
 
 import (
 	"ed-operator/internal/domain/entities"

@@ -1,10 +1,10 @@
-package controller
+package controllers
 
 import (
 	"context"
-	"ed-operator/internal/app/mqtt"
-	command_commons "ed-operator/internal/domain/commands/commons"
-	"ed-operator/internal/domain/dto"
+	command_commons "ed-operator/internal/commands"
+	"ed-operator/internal/dtos"
+	"ed-operator/internal/mqtt"
 	"strings"
 	"time"
 
@@ -89,7 +89,7 @@ func (r *PodPreemptionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	logger.Info("Pod:" + pod.Name + " has been loaded. Publishing command to mqtt...")
-	args := dto.ArgsDto{
+	args := dtos.ArgsDto{
 		Name:            pod.Name,
 		Image:           pod.Spec.Containers[0].Image,
 		PriorityProfile: pod.Spec.PriorityClassName,
@@ -103,7 +103,7 @@ func (r *PodPreemptionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		args.Port = uint16(pod.Spec.Containers[0].Ports[0].ContainerPort)
 	}
 
-	cloudCmd := dto.CommandDTO{
+	cloudCmd := dtos.CommandDTO{
 		Args:          args,
 		CorrelationId: string(uuid.NewUUID()),
 	}

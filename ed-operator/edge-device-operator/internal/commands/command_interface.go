@@ -1,4 +1,4 @@
-package domain_commands
+package commands
 
 import (
 	"context"

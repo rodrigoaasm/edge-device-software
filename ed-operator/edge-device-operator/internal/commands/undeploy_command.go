@@ -1,8 +1,7 @@
-package undeploy
+package commands
 
 import (
 	"context"
-	command_commons "ed-operator/internal/domain/commands/commons"
 	"ed-operator/internal/domain/interfaces"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -69,7 +68,7 @@ func (d *UndeployCommand) deleteService(t corekubev1.ServiceType) error {
 	log := log.FromContext(d.ctx)
 
 	var svc corev1.Service
-	serviceClusterName := command_commons.GetServiceName(d.Name, t)
+	serviceClusterName := GetServiceName(d.Name, t)
 	if dErr := d.reconcilerClient.Get(d.ctx, types.NamespacedName{
 		Name:      serviceClusterName,
 		Namespace: "ed-system",

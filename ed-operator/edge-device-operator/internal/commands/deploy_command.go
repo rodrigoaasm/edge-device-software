@@ -1,8 +1,7 @@
-package deploy
+package commands
 
 import (
 	"context"
-	cmd_commons "ed-operator/internal/domain/commands/commons"
 	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
 	"strconv"
@@ -162,7 +161,7 @@ func (d *DeployCommand) createServiceSchema(t corekubev1.ServiceType) *apiv1.Ser
 
 	return &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cmd_commons.GetServiceName(d.Microservice.Name, t),
+			Name:      GetServiceName(d.Microservice.Name, t),
 			Namespace: "ed-system",
 		},
 		Spec: apiv1.ServiceSpec{

@@ -1,15 +1,10 @@
-package domain_commands
+package commands
 
 import (
 	"context"
-	"ed-operator/internal/domain/commands/deploy"
-	"ed-operator/internal/domain/commands/healthcheck"
-	"ed-operator/internal/domain/commands/list_deploy"
-	"ed-operator/internal/domain/commands/undeploy"
-	"ed-operator/internal/domain/commands/update_deploy"
-	"ed-operator/internal/domain/dto"
 	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
+	"ed-operator/internal/dtos"
 	"ed-operator/internal/utils"
 	"errors"
 )
@@ -23,7 +18,7 @@ func NewCommandFactory(ctx context.Context, drc interfaces.IReconcilerClient) *C
 	return &CommandFactory{ctx: ctx, reconcilerClient: drc}
 }
 
-func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
+func (c *CommandFactory) _mapper(command dtos.CommandDTO) (ICommand, error) {
 	var microservice *entities.Microservice
 	if command.Command == "deploy" {
 		microservice = entities.NewMicroservice(
@@ -58,35 +53,35 @@ func (c *CommandFactory) _mapper(command dto.CommandDTO) (ICommand, error) {
 	}
 
 	if command.Command == "deploy" {
-		return deploy.NewDeployCommand(
+		return NewDeployCommand(
 			command.CorrelationId,
 			microservice,
 		), nil
 	}
 	if command.Command == "update" {
-		return update_deploy.NewUpdateDeployCommand(
+		return NewUpdateDeployCommand(
 			command.CorrelationId,
 			microservice,
 		), nil
 	}
 	if command.Command == "healthcheck" {
-		return healthcheck.NewHealthCheckCommand(
+		return NewHealthCheckCommand(
 			command.CorrelationId,
 		), nil
 	}
 	if command.Command == "list_deploy" {
-		return list_deploy.NewListDeployCommand(
+		return NewListDeployCommand(
 			command.CorrelationId,
 		), nil
 	}
 	if command.Command == "undeploy" {
-		return undeploy.NewUndeployCommand(command.CorrelationId, command.Args.Name), nil
+		return NewUndeployCommand(command.CorrelationId, command.Args.Name), nil
 	}
 
 	return nil, errors.New("Unknown command: " + command.Command)
 }
 
-func (c *CommandFactory) Make(commandDTO dto.CommandDTO) (ICommand, error) {
+func (c *CommandFactory) Make(commandDTO dtos.CommandDTO) (ICommand, error) {
 	command, err := c._mapper(commandDTO)
 	if err != nil {
 		return nil, err

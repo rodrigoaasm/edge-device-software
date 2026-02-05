@@ -1,4 +1,4 @@
-package dto
+package dtos
 
 type ResultDto struct {
 	DeviceId    string      `json:"deviceId"`

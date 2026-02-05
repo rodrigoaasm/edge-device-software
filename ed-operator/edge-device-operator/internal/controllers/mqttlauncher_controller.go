@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package controllers
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1 "ed-operator/api/v1"
-	"ed-operator/internal/app/mqtt"
+	"ed-operator/internal/mqtt"
 )
 
 // MQTTLauncherReconciler reconciles a MQTTLauncher object

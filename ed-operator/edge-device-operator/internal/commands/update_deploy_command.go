@@ -1,8 +1,7 @@
-package update_deploy
+package commands
 
 import (
 	"context"
-	command_commons "ed-operator/internal/domain/commands/commons"
 	"ed-operator/internal/domain/entities"
 	"ed-operator/internal/domain/interfaces"
 	"errors"
@@ -76,7 +75,7 @@ func (d *UpdateDeployCommand) Execute() (interface{}, error) {
 	depTemplateSpec := actualDeployment.Spec.Template.Spec
 	if d.Microservice.Env != nil {
 		log.Info("Update Envs for " + d.Microservice.Name)
-		envVars := command_commons.EnvMapToEnvVar(d.Microservice.Env)
+		envVars := EnvMapToEnvVar(d.Microservice.Env)
 		var deviceIDEnv string
 		if d.Microservice.Name == "operator" {
 			log.Info("This update is for operator, update Env DEVICE_ID for " + d.Microservice.Name)

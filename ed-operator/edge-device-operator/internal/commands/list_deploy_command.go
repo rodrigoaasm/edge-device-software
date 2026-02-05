@@ -1,4 +1,4 @@
-package list_deploy
+package commands
 
 import (
 	"context"

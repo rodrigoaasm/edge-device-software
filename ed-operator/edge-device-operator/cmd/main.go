@@ -42,9 +42,9 @@ import (
 
 	corev1 "ed-operator/api/v1"
 	"ed-operator/config"
-	"ed-operator/internal/app/mqtt"
-	"ed-operator/internal/controller"
-	domain_commands "ed-operator/internal/domain/commands"
+	domain_commands "ed-operator/internal/commands"
+	"ed-operator/internal/controllers"
+	"ed-operator/internal/mqtt"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -218,14 +218,14 @@ func main() {
 	commandFactory := domain_commands.NewCommandFactory(context.Background(), mgr.GetClient())
 	mqttClient := mqtt.NewMQTTClient(commandFactory, configMngr, context.Background())
 
-	mqttLauncher := &controller.MQTTLauncherReconciler{
+	mqttLauncher := &controllers.MQTTLauncherReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 
 		MqttClient: mqttClient,
 	}
 
-	podWatcher := &controller.PodPreemptionReconciler{
+	podWatcher := &controllers.PodPreemptionReconciler{
 		Client: mgr.GetClient(),
 
 		MqttClient: mqttClient,

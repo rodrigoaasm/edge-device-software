@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"ed-operator/config"
-	domain_commands "ed-operator/internal/domain/commands"
-	"ed-operator/internal/domain/dto"
+	domain_commands "ed-operator/internal/commands"
+	"ed-operator/internal/dtos"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-logr/logr"
@@ -64,7 +64,7 @@ func (c *MQTTClient) onConnect(client mqtt.Client) {
 }
 
 func (c *MQTTClient) HandlerMessage(q mqtt.Client, m mqtt.Message) {
-	var messageDTO dto.MessageDTO
+	var messageDTO dtos.MessageDTO
 	if err := json.Unmarshal(m.Payload(), &messageDTO); err != nil {
 		c.log.Error(nil, "Failed to Unmarshal message. "+err.Error())
 		return
@@ -118,7 +118,7 @@ func (c *MQTTClient) publish(topic string, payload []byte) error {
 
 func (c *MQTTClient) PublishResult(correlationId string, Success bool, Message string, Data interface{}) error {
 	c.log.Info(fmt.Sprintf("Publishing result: CorrelationId=%s, Success=%v, Message=%s", correlationId, Success, Message))
-	payload, err := json.MarshalIndent(dto.ResultDto{
+	payload, err := json.MarshalIndent(dtos.ResultDto{
 		DeviceId:    c.config.DeviceId,
 		Correlation: correlationId,
 		Success:     Success,
@@ -135,7 +135,7 @@ func (c *MQTTClient) PublishResult(correlationId string, Success bool, Message s
 	return c.publish(c.config.ResultsTopic, payload)
 }
 
-func (c *MQTTClient) PublishCloudCommand(cmd dto.CommandDTO) error {
+func (c *MQTTClient) PublishCloudCommand(cmd dtos.CommandDTO) error {
 	c.log.Info(fmt.Sprintf("Publishing command:%s to Pod:%s", cmd.Command, cmd.Args.Name))
 	payload, err := json.MarshalIndent(cmd, "", "  ")
 	if err != nil {
@@ -148,7 +148,7 @@ func (c *MQTTClient) PublishCloudCommand(cmd dto.CommandDTO) error {
 
 func (c *MQTTClient) PublishAck(CorrelationId string) error {
 	c.log.Info(fmt.Sprintf("Publishing ack: CorrelationId=%s", CorrelationId))
-	payload, err := json.MarshalIndent(dto.AckDto{
+	payload, err := json.MarshalIndent(dtos.AckDto{
 		DeviceId:    c.config.DeviceId,
 		Correlation: CorrelationId,
 		Timestamp:   time.Now().Unix(),
