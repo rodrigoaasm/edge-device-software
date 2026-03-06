@@ -2,91 +2,170 @@
 
 ## Dependencies
 
-- k3s (kubernetes)
-- docker
+The following tools must be installed on the device:
+
+* **k3s** (Kubernetes distribution)
+* **Docker**
+* **openssl**
+
+---
 
 ## Building Images
 
-In this repository, you will find the necessary files to build the Edge-Device-Software images and import them into the k3s cluster. To build and import a single image, use:
+This repository contains all required files to build the edge-device-doftware container images and import them into the k3s cluster.
 
->Note: `sudo` privileges might be required.
+### Build a Single Image
+
+> Note: `sudo` privileges may be required.
 
 ```sh
 ./build.sh <service-name> <version>
 ```
 
-To automatically build and import all standard system service images, use:
+* `<service-name>`: Name of the service directory.
+* `<version>`: Image tag version (e.g., `1.0.0`).
 
->Note: `sudo` privileges might be required.
+### Build All Standard System Images
+
+> Note: `sudo` privileges may be required.
 
 ```sh
 ./build-all.sh <version>
 ```
 
+This command builds and imports all default system service images using the specified version.
+
 ---
 
-## Installing and Uninstalling ed-software
+## Installing and Uninstalling
 
-To install ed-software in the k3s cluster, run:
+TLS secrets are generated for internal communication. For this process, two OpenSSL configuration files are required:
+- ca.cnf
+- cert.cnf
+
+These files must be placed inside the `.certs` directory:
+
+**CA Example:**
+
+```cnf
+[ req ]
+prompt = no
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+
+[ req_distinguished_name ]
+# Valores do Subject (DN)
+C = BR
+ST = MG
+L = Itajuba
+O = UNIFEI
+OU = ED-SYSTEM
+CN = ED-SYSTEM-CA
+emailAddress = rodrigoasmaia@gmail.com
+
+[ v3_ca ]
+# Configurações para um Certificado de Autoridade (CA)
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = CA:true
+keyUsage = critical, cRLSign, keyCertSign
+```` 
+
+**Cert Example:**
+
+```cnf
+prompt = no
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+
+[ req_distinguished_name ]
+C = BR
+ST = MG
+L = Itajuba
+O = UNIFEI
+OU = ED-SYSTEM
+CN = ED-SYSTEM
+emailAddress = rodrigoasmaia@gmail.com
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment, dataEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = <dns>
+IP.1 = <ip>
+```
+
+### Install
+
+To deploy ed-software into the k3s cluster:
 
 ```sh
 ./up.sh
 ```
 
-To shut down the cluster while preserving ed-software data, use:
+### Stop (Preserve Data)
+
+To stop the cluster while preserving all persistent data:
 
 ```sh
 ./down.sh
 ```
 
-For a complete removal of ed-software, including all data, run:
+### Complete Removal (Including Data)
+
+To completely remove ed-software and all associated data:
 
 ```sh
 ./down.sh -v
 ```
 
+Use this option carefully, as it deletes persistent volumes.
+
 ---
 
-## System Commands
+# System Commands
 
 Messages sent to a device must follow the structure below:
 
 ```ts
 {
-  deviceId: string, // Unique identifier of the target device.
-  correlationId: string, // Unique ID to correlate the response to this specific message.
-  commands: Array<{ // List of commands to be executed on the device.
-    correlationId: string, // Unique ID to correlate the response to this specific command.
-    command: string, // Type of command (e.g., "deploy", "update", "undeploy").
-    args: any // Command-specific arguments.
+  deviceId: string,          // Unique identifier of the target device
+  correlationId: string,     // Correlates the response to this message
+  commands: Array<{
+    correlationId: string,   // Correlates the response to this specific command
+    command: string,         // Command type ("deploy", "update", "undeploy")
+    args: any                // Command-specific arguments
   }>
 }
 ```
 
-Each object inside the `commands` array represents a single instruction for the device, allowing multiple commands to be sent in a single message.
+Each item inside `commands` represents a single instruction. Multiple commands can be sent in a single message.
 
 ---
 
-### Deploy or Update
+## Deploy or Update
 
-This command is used to deploy a new service or update an existing service on the device.
+This command deploys a new service or updates an existing one.
 
 ```ts
 {
-  correlationId: string, // Correlation ID for this deploy/update operation.
-  command: "deploy" | "update", // Indicates initial deployment ("deploy") or update ("update").
+  correlationId: string,
+  command: "deploy" | "update",
   args: {
-    name: string, // Name of the service to be deployed or updated.
-    image: string, // Container image to be used (e.g., "my-app:1.0.0").
-    env?: Map<string,string>, // Map of environment variables.
-    priorityProfile?: string | number, // Default profile name or numeric value (default: single-service).
-    port?: number, // Main exposed service port.
-    internalPort?: number, // Port for internal cluster communication.
-    externalPort?: number // Port for external access.
-    requestMemory?: number // Requested memory in MB (default: 128).
-    limitMemory?: number // Memory limit in MB (default: 256).
-    requestCPU?: number // Requested CPU in millicores (default: 200).
-    limitCPU?: number // CPU limit in millicores (default: 500).
+    name: string,                  // Service name
+    image: string,                 // Container image (e.g., "my-app:1.0.0")
+    env?: Map<string, string>,     // Environment variables
+    priorityProfile?: string | number,
+    port?: number,                 // Main service port
+    internalPort?: number,         // Cluster internal communication port
+    externalPort?: number,         // External access port
+    requestMemory?: number,        // Memory request (MB, default: 128)
+    limitMemory?: number,          // Memory limit (MB, default: 256)
+    requestCPU?: number,           // CPU request (millicores, default: 200)
+    limitCPU?: number              // CPU limit (millicores, default: 500)
   }
 }
 ```
@@ -105,17 +184,17 @@ The `port`, `internalPort`, and `externalPort` properties define how the service
 
 ---
 
-### Undeploy Command
+## Undeploy
 
-This command is used to remove an existing service from a device.
+Removes an existing service from the device.
 
 ```ts
 {
-  correlationId: string, // Correlation ID for this undeploy operation.
-  command: "undeploy", // Command type, always "undeploy".
+  correlationId: string,
+  command: "undeploy",
   args: {
-    name: string, // Name of the service to be removed.
-    image: string // Container image associated with the service.
+    name: string,
+    image: string
   }
 }
 ```
@@ -126,25 +205,42 @@ When adding new services, it is possible to define specific commands for them.
 
 ---
 
-## Basic Kubernetes Commands
+# Basic Kubernetes Commands
+
+### Cluster Resource Usage
 
 ```sh
-## Cluster resource usage
 kubectl top nodes
+```
 
-## Pod resource usage
+### Pod Resource Usage (All Namespaces)
+
+```sh
 kubectl top pods -A
 ```
 
 ---
 
-## Preemption Environment
+# Preemption Environment
 
-To facilitate memory preemption testing, it is recommended to reserve part of the system memory for the operating system and basic Kubernetes services, ensuring minimum cluster stability.
+For memory preemption testing, it is recommended to reserve part of the system memory for the OS and essential Kubernetes components to ensure cluster stability.
 
-To reserve memory, edit the file `/etc/systemd/system/k3s.service` and add the following arguments to the k3s executable:
+Edit:
+
+```
+/etc/systemd/system/k3s.service
+```
+
+Add the following arguments to the k3s executable:
 
 ```sh
 --kubelet-arg="system-reserved=memory=1Gi" \
 --kubelet-arg="kube-reserved=memory=1Gi"
+```
+
+After modifying the file:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl restart k3s
 ```
