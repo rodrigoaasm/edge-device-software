@@ -1,14 +1,23 @@
 # EDGE-DEVICE-SOFTWARE
 
+## Dependencies
+
+- k3s (kubernetes)
+- docker
+
 ## Building Images
 
 In this repository, you will find the necessary files to build the Edge-Device-Software images and import them into the k3s cluster. To build and import a single image, use:
+
+>Note: `sudo` privileges might be required.
 
 ```sh
 ./build.sh <service-name> <version>
 ```
 
 To automatically build and import all standard system service images, use:
+
+>Note: `sudo` privileges might be required.
 
 ```sh
 ./build-all.sh <version>

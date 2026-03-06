@@ -16,7 +16,7 @@ done
 echo "Removing operator deployment"
 kubectl delete deployment operator -n ed-system
 
-echo "Removing operator deployment"
+echo "Removing MQTT broker deployment"
 kubectl delete service nanomq -n ed-system
 kubectl delete deployment nanomq -n ed-system
 
@@ -30,9 +30,17 @@ kubectl delete deployment telegraf-bridge -n ed-system
 echo "Removing telegraf-agg deployment"
 kubectl delete deployment telegraf-agg -n ed-system
 
+echo "Removing minio deployment"
+kubectl delete service minio -n ed-system
+kubectl delete deployment minio -n ed-system
+
 echo "Closing external ports"
 kubectl delete service influxdb-nodeport -n ed-system
 kubectl delete service nanomq-nodeport -n ed-system
+kubectl delete service minio-nodeport -n ed-system
+
+echo "Deleting Certs"
+kubectl delete secret certs-secret -n ed-system
 
 if [ "$VOLUME" = true ]; then
   echo "Removing influxdb pvc & pv..."
@@ -40,7 +48,8 @@ if [ "$VOLUME" = true ]; then
   kubectl delete pvc influxdb-config-pvc -n ed-system
   kubectl delete pv influxdb-data
   kubectl delete pv influxdb-config
-
+  
+  kubectl delete namespace ed-system
   echo "Removing system dir"
   rm -R /mnt/eds
 fi

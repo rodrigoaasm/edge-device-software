@@ -84,6 +84,7 @@ metadata:
   name: influxdb-config-pvc
   namespace: ed-system
 spec:
+  storageClassName: ""
   volumeName: influxdb-config
   accessModes:
     - ReadWriteOnce
